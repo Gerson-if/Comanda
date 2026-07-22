@@ -1,0 +1,52 @@
+<div class="panel" id="image-gallery">
+  <div class="panel-title"><i class="bi bi-images"></i> Fotos do produto</div>
+
+  {% if message %}
+  <div class="upload-error {{ 'mb-3' if message_type == 'danger' else '' }}" style="{{ 'color: var(--sage); background: rgba(122,160,109,.1); border-color: rgba(122,160,109,.3);' if message_type == 'success' }} margin-bottom: 12px;">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  {% if product.images %}
+  <div class="row g-2 mb-3">
+    {% for image in product.images %}
+    <div class="col-6">
+      <div class="position-relative">
+        <img src="{{ url_for('static', filename=image.file_path) }}" class="rounded w-100" style="height: 110px; object-fit: cover;">
+        {% if image.is_primary %}
+          <span class="status-badge status-active position-absolute top-0 start-0 m-1">Principal</span>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-1 mt-1">
+        {% if not image.is_primary %}
+        <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: .7rem;"
+                hx-post="{{ url_for('lojista.images_set_primary', product_id=product.id, image_id=image.id) }}"
+                hx-target="#image-gallery" hx-swap="outerHTML">
+          Tornar principal
+        </button>
+        {% endif %}
+        <button type="button" class="btn btn-sm btn-outline-danger" style="font-size: .7rem;"
+                hx-post="{{ url_for('lojista.images_delete', product_id=product.id, image_id=image.id) }}"
+                hx-target="#image-gallery" hx-swap="outerHTML"
+                hx-confirm="Remover esta imagem?">
+          Remover
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted-custom small mb-3">Nenhuma foto enviada ainda.</p>
+  {% endif %}
+
+  <form hx-post="{{ url_for('lojista.images_upload', product_id=product.id) }}"
+        hx-target="#image-gallery" hx-swap="outerHTML"
+        hx-encoding="multipart/form-data">
+    {{ image_form.hidden_tag() }}
+    <label class="dropzone d-block" onclick="this.querySelector('input[type=file]').click()">
+      <i class="bi bi-cloud-arrow-up d-block"></i>
+      <span class="small">Clique para enviar uma foto</span>
+      {{ image_form.image(onchange="this.closest('form').requestSubmit()") }}
+    </label>
+  </form>
+</div>

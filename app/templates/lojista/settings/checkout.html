@@ -1,0 +1,33 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}Configurações — Checkout{% endblock %}
+{% block page_title %}Configurações{% endblock %}
+
+{% block panel_content %}
+{% include "lojista/settings/_tabs.html" %}
+
+<div class="panel" style="max-width: 480px;">
+  <div class="panel-title"><i class="bi bi-truck"></i> Regras de entrega e pedido mínimo</div>
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+      {{ form.delivery_fee.label(class="form-label small fw-semibold") }}
+      <div class="input-group"><span class="input-group-text">R$</span>{{ form.delivery_fee(class="form-control") }}</div>
+    </div>
+
+    <div class="mb-3">
+      {{ form.free_delivery_above.label(class="form-label small fw-semibold") }}
+      <div class="input-group"><span class="input-group-text">R$</span>{{ form.free_delivery_above(class="form-control") }}</div>
+      <div class="upload-meta">Deixe em branco para não oferecer entrega grátis.</div>
+    </div>
+
+    <div class="mb-4">
+      {{ form.min_order.label(class="form-label small fw-semibold") }}
+      <div class="input-group"><span class="input-group-text">R$</span>{{ form.min_order(class="form-control") }}</div>
+      <div class="upload-meta">Deixe em branco para não exigir valor mínimo.</div>
+    </div>
+
+    {{ form.submit(class="btn btn-chili") }}
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}{{ 'Editar' if category else 'Nova' }} categoria — Comanda{% endblock %}
+{% block page_title %}{{ 'Editar categoria' if category else 'Nova categoria' }}{% endblock %}
+
+{% block panel_content %}
+<a href="{{ url_for('lojista.categories_list') }}" class="link-chili small d-inline-block mb-3">&larr; Voltar para categorias</a>
+
+<div class="panel" style="max-width: 480px;">
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+      {{ form.name.label(class="form-label small fw-semibold") }}
+      {{ form.name(class="form-control", maxlength=100) }}
+      {% for error in form.name.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-4">
+      {{ form.is_active() }}
+      {{ form.is_active.label(class="small text-muted-custom") }}
+    </div>
+
+    {{ form.submit(class="btn btn-chili") }}
+  </form>
+</div>
+{% endblock %}

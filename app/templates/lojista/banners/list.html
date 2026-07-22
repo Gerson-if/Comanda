@@ -1,0 +1,34 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}Banners — Comanda{% endblock %}
+{% block page_title %}Banners &amp; Carrossel{% endblock %}
+
+{% block panel_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <p class="text-muted-custom small m-0">Banners aparecem em um carrossel no topo do seu cardápio público.</p>
+  <a href="{{ url_for('lojista.banners_create') }}" class="btn btn-chili btn-sm">+ Novo banner</a>
+</div>
+
+{% if banners %}
+{% for banner in banners %}
+<div class="banner-row">
+  <img src="{{ url_for('static', filename=banner.image_path) }}" alt="{{ banner.title }}">
+  <div class="flex-grow-1">
+    <div class="text-white fw-semibold">{{ banner.title }}</div>
+    {% if banner.subtitle %}<div class="text-muted-custom small">{{ banner.subtitle }}</div>{% endif %}
+  </div>
+  {% include "lojista/banners/_status_badge.html" %}
+  <a href="{{ url_for('lojista.banners_edit', banner_id=banner.id) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+  <form method="POST" action="{{ url_for('lojista.banners_delete', banner_id=banner.id) }}"
+        hx-boost="false" onsubmit="return confirm('Excluir este banner?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+  </form>
+</div>
+{% endfor %}
+{% else %}
+<div class="panel empty-state">
+  <i class="bi bi-images"></i>
+  Nenhum banner cadastrado ainda. Adicione imagens promocionais para destacar no topo do seu cardápio.
+</div>
+{% endif %}
+{% endblock %}

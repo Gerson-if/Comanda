@@ -1,0 +1,116 @@
+from flask import flash, redirect, render_template, url_for, Response
+
+from app.forms.tenant_settings_forms import CheckoutSettingsForm, MenuSettingsForm, StoreInfoForm
+from app.services.admin_billing_service import AdminBillingService
+from app.services.tenant_settings_service import TenantSettingsError, TenantSettingsService
+from app.utils.decorators import lojista_required
+from app.utils.tenant_context import get_current_tenant
+from app.utils.uploads import InvalidImageError
+
+from app.controllers.lojista import lojista_bp
+
+
+@lojista_bp.route("/configuracoes/loja", methods=["GET", "POST"])
+@lojista_required
+def settings_store():
+    tenant = get_current_tenant()
+    form = StoreInfoForm(obj=tenant)
+    service = TenantSettingsService(tenant)
+
+    if form.validate_on_submit():
+        try:
+            service.update_store_info(
+                name=form.name.data, whatsapp_number=form.whatsapp_number.data,
+                phone=form.phone.data, logo_file_storage=form.logo.data,
+            )
+        except InvalidImageError as exc:
+            flash(str(exc), "danger")
+        else:
+            flash("Dados da loja atualizados.", "success")
+            return redirect(url_for("lojista.settings_store"))
+
+    return render_template("lojista/settings/store.html", form=form, tenant=tenant)
+
+
+@lojista_bp.route("/configuracoes/cardapio", methods=["GET", "POST"])
+@lojista_required
+def settings_menu():
+    tenant = get_current_tenant()
+    form = MenuSettingsForm(obj=tenant)
+    service = TenantSettingsService(tenant)
+
+    if form.validate_on_submit():
+        try:
+            service.update_menu_settings(
+                slug=form.slug.data, pickup_enabled=form.pickup_enabled.data,
+                delivery_enabled=form.delivery_enabled.data,
+            )
+        except TenantSettingsError as exc:
+            flash(str(exc), "danger")
+        else:
+            flash("Configurações do cardápio atualizadas.", "success")
+            return redirect(url_for("lojista.settings_menu"))
+
+    cardapio_url = url_for("public.store_home", slug=tenant.slug, _external=True)
+    qr_code_url = url_for("lojista.settings_menu_qrcode")
+
+    return render_template(
+        "lojista/settings/menu.html", form=form, tenant=tenant,
+        cardapio_url=cardapio_url, qr_code_url=qr_code_url,
+    )
+
+
+@lojista_bp.route("/configuracoes/cardapio/qrcode.png")
+@lojista_required
+def settings_menu_qrcode():
+    """
+    Gera o QR Code do cardápio localmente (biblioteca `qrcode`), sem
+    depender de nenhuma API externa — evita que a funcionalidade quebre
+    se um serviço de terceiros estiver fora do ar ou bloqueado pela
+    rede onde a aplicação está hospedada.
+    """
+    import io
+
+    import qrcode
+
+    tenant = get_current_tenant()
+    cardapio_url = url_for("public.store_home", slug=tenant.slug, _external=True)
+
+    img = qrcode.make(cardapio_url, box_size=8, border=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+
+    return Response(buf.getvalue(), mimetype="image/png")
+
+
+@lojista_bp.route("/configuracoes/checkout", methods=["GET", "POST"])
+@lojista_required
+def settings_checkout():
+    tenant = get_current_tenant()
+    form = CheckoutSettingsForm()
+    service = TenantSettingsService(tenant)
+
+    if form.validate_on_submit():
+        service.update_checkout_settings(
+            delivery_fee_reais=float(form.delivery_fee.data) if form.delivery_fee.data is not None else None,
+            free_delivery_above_reais=float(form.free_delivery_above.data) if form.free_delivery_above.data is not None else None,
+            min_order_reais=float(form.min_order.data) if form.min_order.data is not None else None,
+        )
+        flash("Configurações de checkout atualizadas.", "success")
+        return redirect(url_for("lojista.settings_checkout"))
+
+    if not form.is_submitted():
+        form.delivery_fee.data = (tenant.delivery_fee_cents / 100) if tenant.delivery_fee_cents else None
+        form.free_delivery_above.data = (tenant.free_delivery_above_cents / 100) if tenant.free_delivery_above_cents else None
+        form.min_order.data = (tenant.min_order_cents / 100) if tenant.min_order_cents else None
+
+    return render_template("lojista/settings/checkout.html", form=form, tenant=tenant)
+
+
+@lojista_bp.route("/configuracoes/assinatura")
+@lojista_required
+def settings_subscription():
+    tenant = get_current_tenant()
+    invoices = AdminBillingService().list_invoices_for_tenant(tenant.id)
+    return render_template("lojista/settings/subscription.html", tenant=tenant, invoices=invoices)

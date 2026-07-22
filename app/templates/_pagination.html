@@ -1,0 +1,18 @@
+{# Espera uma variável `pagination` (objeto Pagination do Flask-SQLAlchemy)
+   no contexto. Preserva os demais query params (busca, filtro de status
+   etc.) ao trocar de página. #}
+{% if pagination and pagination.pages > 1 %}
+<div class="d-flex align-items-center justify-content-between mt-4 flex-wrap gap-2 small">
+  <div class="text-muted-custom">
+    Página {{ pagination.page }} de {{ pagination.pages }} ({{ pagination.total }} no total)
+  </div>
+  <div class="d-flex gap-2">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for(request.endpoint, **dict(request.view_args or {}, **dict(request.args, page=pagination.prev_num))) }}" class="btn btn-sm btn-outline-secondary">&larr; Anterior</a>
+    {% endif %}
+    {% if pagination.has_next %}
+      <a href="{{ url_for(request.endpoint, **dict(request.view_args or {}, **dict(request.args, page=pagination.next_num))) }}" class="btn btn-sm btn-outline-secondary">Próxima &rarr;</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

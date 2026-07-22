@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block body_class %}theme-chili{% endblock %}
+
+{% block content %}
+<div class="app-shell" x-data="{ sidebarOpen: false, collapsed: false }">
+  <div class="sidebar-backdrop" :class="{show: sidebarOpen}" @click="sidebarOpen = false"></div>
+
+  <aside class="sidebar" :class="{show: sidebarOpen, 'is-collapsed': collapsed}">
+    <div class="sidebar-brand">
+      <div class="mark"><i class="bi bi-egg-fried text-white"></i></div>
+      <div>
+        <div class="font-display text-white" style="font-size: 1rem; line-height: 1;">COMANDA</div>
+        <div class="text-muted-custom" style="font-size: .7rem;">{{ current_tenant.name if current_tenant }}</div>
+      </div>
+    </div>
+
+    <nav class="nav-food">
+      <a href="{{ url_for('lojista.dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.dashboard' }}">
+        <i class="bi bi-speedometer2"></i><span class="nav-label">Dashboard</span>
+      </a>
+      <a href="{{ url_for('lojista.orders_list', status='pending') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.orders_list' and request.args.get('status') == 'pending' }}">
+        <i class="bi bi-bell"></i><span class="nav-label">Novos Pedidos</span>
+      </a>
+      <a href="{{ url_for('lojista.orders_list') }}" class="nav-link {{ 'active' if request.endpoint in ['lojista.orders_list', 'lojista.orders_detail'] and request.args.get('status') != 'pending' }}">
+        <i class="bi bi-receipt"></i><span class="nav-label">Pedidos</span>
+      </a>
+      <a href="{{ url_for('lojista.products_list') }}" class="nav-link {{ 'active' if request.endpoint and (request.endpoint.startswith('lojista.products') or request.endpoint.startswith('lojista.categories') or request.endpoint.startswith('lojista.images') or request.endpoint.startswith('lojista.complement')) }}">
+        <i class="bi bi-egg-fried"></i><span class="nav-label">Cardápio</span>
+      </a>
+      <a href="{{ url_for('lojista.banners_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('lojista.banners') }}">
+        <i class="bi bi-images"></i><span class="nav-label">Banners</span>
+      </a>
+      <a href="{{ url_for('lojista.reports_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.reports_dashboard' }}">
+        <i class="bi bi-graph-up-arrow"></i><span class="nav-label">Vendas</span>
+      </a>
+      <a href="{{ url_for('lojista.settings_store') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('lojista.settings') }}">
+        <i class="bi bi-gear"></i><span class="nav-label">Configurações</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="text-white fw-semibold">{{ current_user.name }}</div>
+      <a href="{{ url_for('auth.logout') }}" class="link-chili"><i class="bi bi-box-arrow-left"></i> Sair</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary d-lg-none" @click="sidebarOpen = true">
+          <i class="bi bi-list"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary d-none d-lg-inline-block" @click="collapsed = !collapsed">
+          <i class="bi bi-layout-sidebar"></i>
+        </button>
+        <h1>{% block page_title %}{% endblock %}</h1>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="{{ cardapio_url_path if cardapio_url_path else '/loja/' ~ current_tenant.slug }}" target="_blank" class="btn btn-sm btn-outline-chili">
+          <i class="bi bi-box-arrow-up-right"></i> Ver cardápio
+        </a>
+      </div>
+    </header>
+
+    <div class="content">
+      {% block panel_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

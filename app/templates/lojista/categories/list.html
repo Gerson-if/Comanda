@@ -1,0 +1,52 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}Categorias — Comanda{% endblock %}
+{% block page_title %}Cardápio{% endblock %}
+
+{% block panel_content %}
+<ul class="nav nav-pills mb-4 gap-2">
+  <li class="nav-item"><a class="btn btn-sm btn-chili" href="{{ url_for('lojista.categories_list') }}">Categorias</a></li>
+  <li class="nav-item"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('lojista.products_list') }}">Produtos</a></li>
+</ul>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="font-display h6 text-white m-0">Categorias</h2>
+  <a href="{{ url_for('lojista.categories_create') }}" class="btn btn-chili btn-sm">+ Nova categoria</a>
+</div>
+
+{% if categories %}
+<div class="panel p-0" style="overflow: hidden;">
+  <table class="table table-borderless align-middle m-0" style="color: var(--card-text);">
+    <thead style="background: rgba(0,0,0,.15);">
+      <tr class="text-muted-custom small text-uppercase">
+        <th class="px-3 py-3">Nome</th>
+        <th class="px-3 py-3">Status <span class="fw-normal">(clique p/ alternar)</span></th>
+        <th class="px-3 py-3 text-end">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for category in categories %}
+      <tr style="border-top: 1px solid var(--card-border);">
+        <td class="px-3 py-3">{{ category.name }}</td>
+        <td class="px-3 py-3">{% include "lojista/categories/_status_badge.html" %}</td>
+        <td class="px-3 py-3 text-end">
+          <a href="{{ url_for('lojista.categories_edit', category_id=category.id) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+          <button type="button" class="btn btn-sm btn-outline-danger"
+                  hx-post="{{ url_for('lojista.categories_delete', category_id=category.id) }}"
+                  hx-target="closest tr" hx-swap="outerHTML swap:0.15s"
+                  hx-confirm="Excluir esta categoria? Os produtos dela ficarão sem categoria.">
+            Excluir
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="panel empty-state">
+  <i class="bi bi-tag"></i>
+  Nenhuma categoria cadastrada ainda. Crie a primeira para começar a organizar seu cardápio.
+</div>
+{% endif %}
+{% include "_pagination.html" %}
+{% endblock %}

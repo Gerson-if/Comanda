@@ -1,0 +1,39 @@
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired, Email, Length, Regexp
+
+from app.utils.validators import not_blank, phone_number
+
+
+class RegistrationForm(FlaskForm):
+    owner_name = StringField(
+        "Seu nome", validators=[DataRequired(message="Informe seu nome."), Length(max=150), not_blank]
+    )
+    whatsapp_number = StringField(
+        "WhatsApp corporativo",
+        validators=[DataRequired(message="Informe o WhatsApp."), Length(max=20), phone_number()],
+    )
+    store_name = StringField(
+        "Nome da Loja / Restaurante",
+        validators=[DataRequired(message="Informe o nome da loja."), Length(max=150), not_blank],
+    )
+    slug = StringField(
+        "URL do cardápio",
+        validators=[
+            DataRequired(message="Escolha o endereço do seu cardápio."),
+            Length(min=3, max=150),
+            Regexp(r"^[a-z0-9-]+$", message="Use apenas letras minúsculas, números e hífens."),
+        ],
+    )
+    email = StringField(
+        "E-mail corporativo",
+        validators=[DataRequired(message="Informe o e-mail."), Email(message="E-mail inválido."), Length(max=180)],
+    )
+    password = PasswordField(
+        "Criar senha de acesso",
+        validators=[
+            DataRequired(message="Informe uma senha."),
+            Length(min=6, max=128, message="A senha deve ter entre 6 e 128 caracteres."),
+        ],
+    )
+    submit = SubmitField("Criar Meu Painel Administrativo")

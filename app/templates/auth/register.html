@@ -1,0 +1,71 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Criar loja — Comanda{% endblock %}
+{% block auth_title %}Crie sua Loja{% endblock %}
+{% block auth_subtitle %}Cadastre-se e monte seu cardápio digital em minutos{% endblock %}
+
+{% block content %}
+<div class="auth-shell">
+  <div class="auth-panel" style="max-width: 480px;">
+    <div class="text-center mb-4">
+      <div class="brand-mark mx-auto"><i class="bi bi-egg-fried text-white"></i></div>
+      <h3 class="font-display m-0 mt-2" style="font-size: 1.35rem;">Crie sua Loja</h3>
+      <p class="text-muted-custom small mt-1">Cadastre-se e monte seu cardápio digital em minutos</p>
+    </div>
+
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="row g-2 mb-3">
+        <div class="col-sm-6">
+          {{ form.owner_name.label(class="form-label small fw-semibold") }}
+          {{ form.owner_name(class="form-control", placeholder="Gestor lojista", maxlength=150) }}
+          {% for error in form.owner_name.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="col-sm-6">
+          {{ form.whatsapp_number.label(class="form-label small fw-semibold") }}
+          {{ form.whatsapp_number(class="form-control", placeholder="(11) 99999-0000", maxlength=20) }}
+          {% for error in form.whatsapp_number.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        {{ form.store_name.label(class="form-label small fw-semibold") }}
+        {{ form.store_name(class="form-control", placeholder="Ex: Sabor da Vila", maxlength=150) }}
+        {% for error in form.store_name.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.slug.label(class="form-label small fw-semibold") }}
+        <div class="input-group">
+          <span class="input-group-text font-mono small">/loja/</span>
+          {{ form.slug(class="form-control font-mono", placeholder="minha-loja", maxlength=150,
+              **{"oninput": "this.value = this.value.toLowerCase().replace(/[^a-z0-9-]+/g,'-')",
+                 "hx-get": url_for('auth.check_slug_availability'), "hx-trigger": "keyup changed delay:400ms",
+                 "hx-target": "#slug-feedback", "hx-swap": "innerHTML"}) }}
+        </div>
+        <div id="slug-feedback"></div>
+        {% for error in form.slug.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+        <div class="upload-meta">Apenas letras minúsculas, números e hífens.</div>
+      </div>
+
+      <div class="mb-3">
+        {{ form.email.label(class="form-label small fw-semibold") }}
+        {{ form.email(class="form-control", placeholder="contato@sualoja.com", maxlength=180) }}
+        {% for error in form.email.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="mb-4">
+        {{ form.password.label(class="form-label small fw-semibold") }}
+        {{ form.password(class="form-control", placeholder="Mínimo de 6 caracteres", maxlength=128) }}
+        {% for error in form.password.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+      </div>
+
+      {{ form.submit(class="btn btn-chili w-100 mb-3") }}
+    </form>
+
+    <div class="text-center small text-muted-custom">
+      Já tem uma conta? <a href="{{ url_for('auth.login') }}" class="link-chili">Fazer login</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

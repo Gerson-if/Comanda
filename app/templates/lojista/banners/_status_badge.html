@@ -1,0 +1,6 @@
+<span id="banner-status-{{ banner.id }}" class="status-badge {{ 'status-active' if banner.is_active else 'status-suspended' }}"
+      style="cursor: pointer;" title="Clique para ativar/desativar"
+      hx-post="{{ url_for('lojista.banners_toggle', banner_id=banner.id) }}"
+      hx-target="this" hx-swap="outerHTML">
+  {{ 'Ativo' if banner.is_active else 'Inativo' }}
+</span>

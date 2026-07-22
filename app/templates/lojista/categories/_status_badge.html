@@ -1,0 +1,6 @@
+<span id="category-status-{{ category.id }}" class="status-badge {{ 'status-active' if category.is_active else 'status-suspended' }}"
+      style="cursor: pointer;" title="Clique para ativar/desativar"
+      hx-post="{{ url_for('lojista.categories_toggle', category_id=category.id) }}"
+      hx-target="this" hx-swap="outerHTML">
+  {{ 'Ativa' if category.is_active else 'Inativa' }}
+</span>

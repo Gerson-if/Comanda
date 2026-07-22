@@ -1,0 +1,2 @@
+{% set status = order.status.value %}
+<span class="status-pill status-{{ status }}">{{ status_labels.get(status, status) }}</span>

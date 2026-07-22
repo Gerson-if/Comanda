@@ -1,0 +1,15 @@
+{% set status = tenant.status.value %}
+<span class="status-badge
+  {%- if status == 'active' %} status-active
+  {%- elif status == 'trial' %} status-trial
+  {%- elif status == 'blocked_payment' %} status-blocked
+  {%- else %} status-suspended
+  {%- endif %}">
+  {%- if status == 'active' %}Ativa
+  {%- elif status == 'trial' %}Trial
+  {%- elif status == 'blocked_payment' %}Bloqueada
+  {%- elif status == 'suspended' %}Suspensa
+  {%- elif status == 'canceled' %}Cancelada
+  {%- else %}{{ status }}
+  {%- endif %}
+</span>

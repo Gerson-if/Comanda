@@ -1,0 +1,124 @@
+"""
+Integração com a API do Asaas (https://docs.asaas.com) para cobrança das
+faturas dos lojistas.
+
+IMPORTANTE — leia antes de usar em produção: esta implementação segue a
+estrutura pública documentada da API v3 do Asaas (endpoints, payload e
+nomes de campo) a partir do conhecimento disponível no momento em que
+foi escrita. Como não há uma conta Asaas real conectada neste ambiente,
+**não foi possível testar contra a API de verdade** — antes de usar em
+produção, valide contra o ambiente sandbox do Asaas
+(https://sandbox.asaas.com) com uma chave de API de teste e confira a
+documentação oficial atual, caso a API tenha mudado.
+
+Como habilitar: defina as variáveis de ambiente `ASAAS_API_KEY` (chave
+gerada no painel do Asaas, em Configurações → Integrações → API) e,
+opcionalmente, `ASAAS_ENVIRONMENT=production` (o padrão é `sandbox`,
+ambiente de testes do próprio Asaas). Enquanto `ASAAS_API_KEY` não
+estiver definida, `get_gateway()` retorna `None` e o sistema continua
+funcionando normalmente com lançamento manual de fatura.
+"""
+
+import requests
+
+from app.services.payment_gateway.base import PaymentGateway, PaymentGatewayError
+
+REQUEST_TIMEOUT_SECONDS = 15
+
+
+class AsaasGateway(PaymentGateway):
+    def __init__(self, api_key: str, environment: str = "sandbox"):
+        self.api_key = api_key
+        self.base_url = (
+            "https://api.asaas.com/v3"
+            if environment == "production"
+            else "https://sandbox.asaas.com/api/v3"
+        )
+
+    @property
+    def _headers(self) -> dict:
+        return {
+            "access_token": self.api_key,
+            "Content-Type": "application/json",
+            "User-Agent": "ComandaSaaS/1.0",
+        }
+
+    def _request(self, method: str, path: str, **kwargs) -> dict:
+        url = f"{self.base_url}{path}"
+        try:
+            response = requests.request(
+                method, url, headers=self._headers, timeout=REQUEST_TIMEOUT_SECONDS, **kwargs
+            )
+        except requests.RequestException as exc:
+            raise PaymentGatewayError(
+                "Não foi possível conectar ao Asaas. Tente novamente em instantes."
+            ) from exc
+
+        if response.status_code >= 400:
+            # O Asaas retorna {"errors": [{"description": "..."}]} em erros
+            # de validação — extrai uma mensagem legível quando possível,
+            # sem vazar o corpo bruto da resposta.
+            detail = "Erro desconhecido."
+            try:
+                errors = response.json().get("errors", [])
+                if errors:
+                    detail = errors[0].get("description", detail)
+            except ValueError:
+                pass
+            raise PaymentGatewayError(f"Asaas recusou a requisição: {detail}")
+
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise PaymentGatewayError("Resposta inesperada do Asaas.") from exc
+
+    def ensure_customer(self, tenant) -> str:
+        if tenant.asaas_customer_id:
+            return tenant.asaas_customer_id
+
+        payload = {
+            "name": tenant.name,
+            "email": tenant.email,
+            "externalReference": str(tenant.id),
+        }
+        if tenant.whatsapp_number:
+            payload["mobilePhone"] = tenant.whatsapp_number
+        if tenant.phone:
+            payload["phone"] = tenant.phone
+
+        data = self._request("POST", "/customers", json=payload)
+        customer_id = data.get("id")
+        if not customer_id:
+            raise PaymentGatewayError("Asaas não retornou um ID de cliente válido.")
+
+        tenant.asaas_customer_id = customer_id
+        return customer_id
+
+    def create_charge(self, tenant, invoice) -> dict:
+        customer_id = self.ensure_customer(tenant)
+
+        payload = {
+            "customer": customer_id,
+            # "UNDEFINED" deixa o próprio lojista escolher a forma de
+            # pagamento (Pix, boleto ou cartão) na tela de fatura do Asaas.
+            "billingType": "UNDEFINED",
+            "value": round(invoice.amount_cents / 100, 2),
+            "dueDate": invoice.due_date.isoformat(),
+            "description": f"Fatura #{invoice.id} — {tenant.name}",
+            "externalReference": str(invoice.id),
+        }
+
+        data = self._request("POST", "/payments", json=payload)
+        charge_id = data.get("id")
+        if not charge_id:
+            raise PaymentGatewayError("Asaas não retornou um ID de cobrança válido.")
+
+        return {
+            "id": charge_id,
+            "payment_url": data.get("invoiceUrl"),
+            "status": data.get("status"),
+        }
+
+    def get_charge_status(self, charge_id: str) -> dict:
+        data = self._request("GET", f"/payments/{charge_id}")
+        return {"id": data.get("id"), "status": data.get("status")}

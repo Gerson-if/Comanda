@@ -1,0 +1,48 @@
+{% extends "layouts/admin_panel.html" %}
+{% block title %}Lojistas — Comanda Admin{% endblock %}
+{% block page_title %}Gerenciar Lojistas{% endblock %}
+
+{% block panel_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <form method="GET" class="d-flex flex-wrap gap-2">
+    <input type="text" name="q" value="{{ term }}" placeholder="Buscar por nome, e-mail ou slug..." class="form-control form-control-sm" style="max-width: 260px;">
+    <select name="status" class="form-select form-select-sm" style="max-width: 200px;">
+      <option value="" {{ "selected" if not status }}>Todos os status</option>
+      <option value="trial" {{ "selected" if status == "trial" }}>Trial</option>
+      <option value="active" {{ "selected" if status == "active" }}>Ativa</option>
+      <option value="suspended" {{ "selected" if status == "suspended" }}>Suspensa</option>
+      <option value="blocked_payment" {{ "selected" if status == "blocked_payment" }}>Bloqueada</option>
+      <option value="canceled" {{ "selected" if status == "canceled" }}>Cancelada</option>
+    </select>
+    <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
+    {% if term or status %}<a href="{{ url_for('admin.tenants_list') }}" class="btn btn-sm btn-outline-secondary">Limpar</a>{% endif %}
+  </form>
+  <a href="{{ url_for('admin.tenants_create') }}" class="btn btn-chili btn-sm">+ Novo lojista</a>
+</div>
+
+{% if tenants %}
+<div class="panel p-0" style="overflow: hidden;">
+  <table class="table table-borderless align-middle m-0" style="color: var(--card-text);">
+    <thead style="background: rgba(0,0,0,.15);">
+      <tr class="text-muted-custom small text-uppercase">
+        <th class="px-3 py-3">Nome</th><th class="px-3 py-3">E-mail</th><th class="px-3 py-3">Plano</th><th class="px-3 py-3">Status</th><th class="px-3 py-3 text-end">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tenant in tenants %}
+      <tr style="border-top: 1px solid var(--card-border);">
+        <td class="px-3 py-3"><a href="{{ url_for('admin.tenants_detail', tenant_id=tenant.id) }}" class="text-white text-decoration-none fw-semibold">{{ tenant.name }}</a></td>
+        <td class="px-3 py-3 text-muted-custom">{{ tenant.email }}</td>
+        <td class="px-3 py-3 text-muted-custom">{{ tenant.plan.name if tenant.plan else "—" }}</td>
+        <td class="px-3 py-3">{% include "admin/tenants/_status_badge.html" %}</td>
+        <td class="px-3 py-3 text-end"><a href="{{ url_for('admin.tenants_detail', tenant_id=tenant.id) }}" class="btn btn-sm btn-outline-secondary">Ver / gerenciar</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="panel empty-state"><i class="bi bi-shop"></i>Nenhum lojista encontrado{% if term or status %} com esse filtro{% endif %}.</div>
+{% endif %}
+{% include "_pagination.html" %}
+{% endblock %}

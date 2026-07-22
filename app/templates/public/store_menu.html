@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+{% block title %}{{ tenant.name }} — Cardápio{% endblock %}
+
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1B140F; --bg-soft: #221A13; --surface: #2B2016; --surface-2: #35281B;
+    --line: rgba(244,234,217,0.09); --line-strong: rgba(244,234,217,0.18);
+    --text: #F5EAD9; --text-dim: #C9B7A0; --text-faint: #8E7C68;
+    --accent: #E8A33D; --accent-dark: #C97F1F; --accent-soft: rgba(232,163,61,0.14);
+    --herb: #7FA05C; --rust: #C1502E; --paper: #F4ECDD;
+    --font-display: 'Fraunces', serif; --font-body: 'Plus Jakarta Sans', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+  }
+  body.menu-body { background: var(--bg); color: var(--text); font-family: var(--font-body); padding-bottom: 90px; }
+  .menu-header { background: linear-gradient(180deg, var(--bg-soft), var(--bg)); border-bottom: 1px solid var(--line); padding: 32px 16px 20px; text-align: center; }
+  .menu-header .logo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); margin-bottom: 10px; }
+  .menu-title { font-family: var(--font-display); font-weight: 700; font-size: 1.8rem; margin: 0; }
+  .menu-badges .badge { background: var(--surface); border: 1px solid var(--line-strong); color: var(--text-dim); font-weight: 500; font-family: var(--font-body); }
+
+  .banner-carousel .carousel-item img { height: 160px; object-fit: cover; border-radius: 14px; }
+
+  .category-nav { position: sticky; top: 0; z-index: 30; background: rgba(27,20,15,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); padding: 12px 0; overflow-x: auto; white-space: nowrap; }
+  .category-nav a {
+    display: inline-block; margin-right: 8px; padding: 8px 18px; border-radius: 30px;
+    background: var(--surface); border: 1px solid var(--line-strong); color: var(--text-dim);
+    text-decoration: none; font-size: .85rem; font-weight: 600; transition: all .15s ease;
+  }
+  .category-nav a:hover, .category-nav a.active { background: var(--accent); color: #1B140F; border-color: var(--accent); }
+
+  .product-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+    display: flex; flex-direction: column; height: 100%; cursor: pointer; transition: transform .15s ease, border-color .15s ease;
+  }
+  .product-card:hover { transform: translateY(-3px); border-color: var(--line-strong); }
+  .product-card img { height: 150px; object-fit: cover; width: 100%; background: var(--surface-2); }
+  .product-card .no-image { height: 150px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--text-faint); }
+  .product-card .body { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; }
+  .product-card .name { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; margin-bottom: 4px; }
+  .product-card .desc { color: var(--text-dim); font-size: .82rem; margin-bottom: 10px; flex-grow: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .product-card .price { font-family: var(--font-mono); color: var(--accent); font-weight: 700; font-size: 1.05rem; }
+  .product-card .price small { color: var(--text-faint); font-weight: 500; font-size: .68rem; }
+
+  .btn-add {
+    width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--surface-2);
+    color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .btn-add:hover { background: var(--accent); color: #1B140F; }
+
+  .btn-accent { background: var(--accent); border-color: var(--accent); color: #1B140F; font-weight: 700; border-radius: 10px; }
+  .btn-accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #1B140F; }
+  .btn-accent:disabled { opacity: .5; }
+  .btn-ghost-menu { background: transparent; border: 1px solid var(--line-strong); color: var(--text); border-radius: 10px; }
+  .btn-ghost-menu:hover { background: var(--surface-2); color: #fff; }
+
+  .cart-fab {
+    position: fixed; bottom: 20px; right: 20px; left: 20px; z-index: 60;
+    background: var(--accent); color: #1B140F; border: none; border-radius: 14px;
+    padding: 14px 20px; font-weight: 800; display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4); max-width: 480px; margin: 0 auto;
+  }
+  @media (min-width: 576px) { .cart-fab { left: auto; width: 340px; } }
+
+  .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+  @media (min-width: 576px) { .sheet-overlay { align-items: center; } }
+  .sheet {
+    background: var(--bg-soft); border: 1px solid var(--line-strong); border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 480px; max-height: 88vh; display: flex; flex-direction: column; color: var(--text);
+  }
+  .sheet.sheet-lg { max-width: 620px; }
+  @media (min-width: 576px) { .sheet { border-radius: 20px; } }
+  .sheet-head { padding: 18px 22px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+  .sheet-head h3 { font-family: var(--font-display); margin: 0; font-size: 1.2rem; }
+  .sheet-body { padding: 20px 22px; overflow-y: auto; flex-grow: 1; }
+  .sheet-foot { padding: 16px 22px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+  .sheet .form-control, .sheet .form-select { background: var(--surface); border-color: var(--line-strong); color: var(--text); }
+  .sheet .form-control:focus, .sheet .form-select:focus { background: var(--surface); color: var(--text); border-color: var(--accent); box-shadow: 0 0 0 .2rem var(--accent-soft); }
+  .sheet .form-label { color: var(--text-dim); font-size: .82rem; font-weight: 600; }
+
+  .qty-stepper button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); }
+
+  .product-modal-media { text-align: center; font-size: 3rem; background: var(--surface-2); border-radius: 12px; padding: 10px; overflow: hidden; }
+  .product-modal-media img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; }
+
+  .opt-group { margin-bottom: 1rem; }
+  .opt-group .label-group { font-weight: 700; font-size: .9rem; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .opt-group .label-group .req { color: var(--rust); font-size: .7rem; font-family: var(--font-mono); }
+  .opt-group .label-group .optional-tag { color: var(--text-faint); font-size: .7rem; font-family: var(--font-mono); }
+  .opt-option {
+    display: inline-block; padding: 8px 16px; border-radius: 999px; background: var(--surface);
+    border: 2px solid var(--line); color: var(--text-dim); font-weight: 600; font-size: .85rem;
+    cursor: pointer; transition: all .15s; margin: 0 6px 6px 0;
+  }
+  .opt-option:hover { border-color: var(--line-strong); }
+  .opt-option.checked { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .opt-option .extra { font-family: var(--font-mono); font-size: .7rem; margin-left: 4px; }
+  .opt-option.checked .extra { color: var(--accent); }
+
+  .qty-selector { display: inline-flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; padding: 4px 10px; }
+  .qty-selector button { width: 28px; height: 28px; border-radius: 6px; border: none; background: var(--surface-2); color: var(--text); font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block body_class %}menu-body{% endblock %}
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<div x-data="menuApp()" x-init="init()" hx-boost="false">
+
+  <div class="menu-header">
+    {% if tenant.logo_path %}
+      <img src="{{ url_for('static', filename=tenant.logo_path) }}" alt="{{ tenant.name }}" class="logo">
+    {% endif %}
+    <h1 class="menu-title">{{ tenant.name }}</h1>
+    <div class="menu-badges d-flex justify-content-center gap-2 mt-2">
+      {% if tenant.pickup_enabled %}<span class="badge rounded-pill px-3 py-2">Retirada</span>{% endif %}
+      {% if tenant.delivery_enabled %}<span class="badge rounded-pill px-3 py-2">Entrega</span>{% endif %}
+    </div>
+  </div>
+
+  {% if banners %}
+  <div class="container-fluid px-3 py-3" style="max-width: 720px;">
+    <div id="bannerCarousel" class="carousel slide banner-carousel" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        {% for banner in banners %}
+        <div class="carousel-item {{ 'active' if loop.first }}">
+          {% if banner.link_url %}<a href="{{ banner.link_url }}" target="_blank">{% endif %}
+          <img src="{{ url_for('static', filename=banner.image_path) }}" alt="{{ banner.title }}" class="d-block w-100">
+          {% if banner.link_url %}</a>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% if banners|length > 1 %}
+      <button class="carousel-control-prev" type="button" data-bs-target="#bannerCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
+      <button class="carousel-control-next" type="button" data-bs-target="#bannerCarousel" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if menu_data.categories %}
+  <nav class="category-nav">
+    <div class="container-fluid" style="max-width: 720px;">
+      {% for category in menu_data.categories %}
+      <a href="#categoria-{{ category.id }}">{{ category.name }}</a>
+      {% endfor %}
+    </div>
+  </nav>
+
+  <div class="container-fluid px-3 py-4" style="max-width: 720px;">
+    {% for category in menu_data.categories %}
+    <section id="categoria-{{ category.id }}" class="mb-4">
+      <h2 class="h6 fw-bold mb-3" style="font-family: var(--font-display); font-size: 1.3rem;">{{ category.name }}</h2>
+      <div class="row g-3">
+        {% for product in category.products %}
+        <div class="col-6 col-md-4">
+          <div class="product-card" @click="openProductModal({{ product.id }})">
+            {% if product.image_url %}
+              <img src="{{ product.image_url }}" alt="{{ product.name }}">
+            {% else %}
+              <div class="no-image">🍽️</div>
+            {% endif %}
+            <div class="body">
+              <div class="name">{{ product.name }}</div>
+              {% if product.description %}<div class="desc">{{ product.description }}</div>{% endif %}
+              <div class="d-flex justify-content-between align-items-center mt-auto">
+                <span class="price">R$ {{ "%.2f"|format(product.price_cents / 100) }}{% if product.complement_groups %} <small>a partir</small>{% endif %}</span>
+                <button type="button" class="btn-add" @click.stop="openProductModal({{ product.id }})">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5" style="color: var(--text-dim);">
+    Este cardápio ainda não tem produtos disponíveis. Volte em breve!
+  </div>
+  {% endif %}
+
+  <!-- Botão flutuante do carrinho -->
+  <button type="button" class="cart-fab" x-show="itemCount() > 0" x-cloak @click="showCart = true">
+    <span>🛒 <span x-text="itemCount()"></span> ite(ns)</span>
+    <span x-text="'R$ ' + formatCents(subtotalCents())"></span>
+  </button>
+
+  <!-- Modal de produto (variações / complementos) -->
+  <div class="sheet-overlay" x-show="selectedProduct" x-cloak @click.self="closeProductModal()">
+    <template x-if="selectedProduct">
+      <div class="sheet sheet-lg">
+        <div class="sheet-head">
+          <h3 x-text="selectedProduct.name"></h3>
+          <button type="button" class="btn-close btn-close-white" @click="closeProductModal()"></button>
+        </div>
+        <div class="sheet-body">
+          <div class="product-modal-media">
+            <template x-if="selectedProduct.image_url"><img :src="selectedProduct.image_url" :alt="selectedProduct.name"></template>
+            <template x-if="!selectedProduct.image_url"><span>🍽️</span></template>
+          </div>
+
+          <p class="mt-3" style="color: var(--text-dim);" x-show="selectedProduct.description" x-text="selectedProduct.description"></p>
+          <div class="fw-bold fs-4" style="color: var(--accent);" x-text="'R$ ' + formatCents(modalUnitPriceCents())"></div>
+
+          <template x-if="modalValidationError">
+            <div class="alert alert-danger py-2 small mt-2" x-text="modalValidationError"></div>
+          </template>
+
+          <template x-for="group in selectedProduct.complement_groups" :key="group.id">
+            <div class="opt-group">
+              <div class="label-group">
+                <span x-text="group.name"></span>
+                <span class="req" x-show="group.is_required">*obrigatório</span>
+                <span class="optional-tag" x-show="!group.is_required">opcional</span>
+              </div>
+              <div>
+                <template x-for="opt in group.options" :key="opt.id">
+                  <span class="opt-option" :class="{ checked: isOptionSelected(group, opt) }" @click="toggleOption(group, opt)">
+                    <span x-text="opt.name"></span>
+                    <span class="extra" x-text="opt.extra_price_cents > 0 ? '+R$ ' + formatCents(opt.extra_price_cents) : 'sem custo'"></span>
+                  </span>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <div class="d-flex align-items-center gap-3 mt-3">
+            <span class="fw-bold small">Quantidade</span>
+            <div class="qty-selector">
+              <button type="button" @click="modalQty = Math.max(1, modalQty - 1)">−</button>
+              <span x-text="modalQty"></span>
+              <button type="button" @click="modalQty++">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="sheet-foot">
+          <button type="button" class="btn btn-ghost-menu" @click="closeProductModal()">Fechar</button>
+          <button type="button" class="btn btn-accent flex-grow-1" @click="addSelectedProductToCart()">
+            Adicionar · <span x-text="'R$ ' + formatCents(modalUnitPriceCents() * modalQty)"></span>
+          </button>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Carrinho -->
+  <div class="sheet-overlay" x-show="showCart" x-cloak @click.self="showCart = false">
+    <div class="sheet">
+      <div class="sheet-head"><h3>Seu carrinho</h3><button type="button" class="btn-close btn-close-white" @click="showCart = false"></button></div>
+      <div class="sheet-body">
+        <template x-if="Object.keys(cart).length === 0"><p style="color: var(--text-dim);">Seu carrinho está vazio.</p></template>
+        <template x-for="(item, cartKey) in cart" :key="cartKey">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <div class="fw-semibold" x-text="item.name"></div>
+              <template x-for="choice in item.choices" :key="choice.group_name + choice.option_name">
+                <div style="color: var(--text-faint); font-size: .78rem;" x-text="choice.group_name + ': ' + choice.option_name"></div>
+              </template>
+              <div style="color: var(--text-dim); font-size:.85rem;" x-text="'R$ ' + formatCents(item.unit_price_cents)"></div>
+            </div>
+            <div class="d-flex align-items-center gap-2 qty-stepper">
+              <button type="button" @click="decrementCartItem(cartKey)">−</button>
+              <span x-text="item.quantity"></span>
+              <button type="button" @click="incrementCartItem(cartKey)">+</button>
+            </div>
+          </div>
+        </template>
+        <hr style="border-color: var(--line);">
+        <div class="d-flex justify-content-between fw-bold"><span>Subtotal</span><span x-text="'R$ ' + formatCents(subtotalCents())"></span></div>
+      </div>
+      <div class="sheet-foot">
+        <button type="button" class="btn btn-ghost-menu flex-grow-1" @click="showCart = false">Continuar</button>
+        <button type="button" class="btn btn-accent flex-grow-1" :disabled="itemCount() === 0" @click="showCart = false; showCheckout = true;">Fechar pedido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout -->
+  <div class="sheet-overlay" x-show="showCheckout" x-cloak @click.self="showCheckout = false">
+    <div class="sheet">
+      <div class="sheet-head"><h3>Finalizar pedido</h3><button type="button" class="btn-close btn-close-white" @click="showCheckout = false"></button></div>
+      <div class="sheet-body">
+        <template x-if="errorMessage"><div class="alert alert-danger py-2 small" x-text="errorMessage"></div></template>
+
+        <div class="mb-3"><label class="form-label">Seu nome</label><input type="text" class="form-control" x-model="checkout.customer_name" maxlength="150"></div>
+        <div class="mb-3"><label class="form-label">WhatsApp / telefone</label><input type="text" class="form-control" placeholder="67999998888" x-model="checkout.customer_phone" maxlength="20"></div>
+
+        <div class="mb-3">
+          <label class="form-label d-block">Como você quer receber?</label>
+          <div class="d-flex gap-2">
+            <template x-if="tenant.pickup_enabled"><button type="button" class="btn btn-sm flex-fill" :class="checkout.delivery_type === 'pickup' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.delivery_type = 'pickup'">Retirar</button></template>
+            <template x-if="tenant.delivery_enabled"><button type="button" class="btn btn-sm flex-fill" :class="checkout.delivery_type === 'delivery' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.delivery_type = 'delivery'">Entrega</button></template>
+          </div>
+        </div>
+
+        <template x-if="checkout.delivery_type === 'delivery'">
+          <div class="p-3 mb-3 rounded" style="background: var(--surface); border: 1px solid var(--line);">
+            <p class="small mb-2" style="color: var(--text-dim);">Preencha com clareza para evitar erros na entrega.</p>
+            <div class="row g-2">
+              <div class="col-8"><label class="form-label">Rua</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_street" maxlength="180"></div>
+              <div class="col-4"><label class="form-label">Número</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_number" maxlength="20"></div>
+              <div class="col-6"><label class="form-label">Bairro</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_neighborhood" maxlength="100"></div>
+              <div class="col-6"><label class="form-label">Complemento</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_complement" maxlength="120"></div>
+              <div class="col-6"><label class="form-label">Cidade</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_city" maxlength="100"></div>
+              <div class="col-6"><label class="form-label">Referência</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_reference" maxlength="180"></div>
+            </div>
+            <template x-if="tenant.delivery_fee_cents > 0"><p class="small mt-2 mb-0" style="color: var(--text-dim);">Taxa de entrega: R$ <span x-text="formatCents(tenant.delivery_fee_cents)"></span></p></template>
+            <template x-if="tenant.free_delivery_above_cents > 0"><p class="small mt-1 mb-0" style="color: var(--text-dim);">Entrega grátis acima de R$ <span x-text="formatCents(tenant.free_delivery_above_cents)"></span></p></template>
+          </div>
+        </template>
+
+        <div class="mb-3"><label class="form-label">Pagamento</label>
+          <select class="form-select form-select-sm" x-model="checkout.payment_method">
+            <option value="cash">Dinheiro</option><option value="card">Cartão</option><option value="pix">Pix</option><option value="other">Outro</option>
+          </select>
+        </div>
+        <div class="mb-3"><label class="form-label">Observações</label><textarea class="form-control form-control-sm" rows="2" x-model="checkout.notes" maxlength="1000"></textarea></div>
+        <template x-if="tenant.min_order_cents > 0 && subtotalCents() < tenant.min_order_cents">
+          <div class="alert alert-warning py-2 small">Pedido mínimo: R$ <span x-text="formatCents(tenant.min_order_cents)"></span></div>
+        </template>
+        <div class="d-flex justify-content-between fw-bold"><span>Total</span><span x-text="'R$ ' + formatCents(totalWithDeliveryCents())"></span></div>
+      </div>
+      <div class="sheet-foot">
+        <button type="button" class="btn btn-ghost-menu flex-grow-1" @click="showCheckout = false; showCart = true;">Voltar</button>
+        <button type="button" class="btn btn-accent flex-grow-1" :disabled="submitting" @click="submitOrder()">
+          <span x-show="!submitting">Enviar pedido</span><span x-show="submitting">Enviando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmação -->
+  <div class="sheet-overlay" x-show="confirmedOrder" x-cloak>
+    <div class="sheet" style="max-width: 380px;">
+      <div class="sheet-body text-center">
+        <div style="font-size: 2.5rem;">✅</div>
+        <h3 class="mt-2">Pedido #<span x-text="confirmedOrder && confirmedOrder.order_number"></span> registrado!</h3>
+        <p style="color: var(--text-dim);">Total: R$ <span x-text="confirmedOrder && formatCents(confirmedOrder.total_cents)"></span></p>
+        <p class="small" style="color: var(--text-dim);">Finalize enviando a mensagem pelo WhatsApp para a loja confirmar seu pedido.</p>
+        <a :href="confirmedOrder && confirmedOrder.whatsapp_url" target="_blank" class="btn btn-accent w-100 mb-2" x-show="confirmedOrder && confirmedOrder.whatsapp_url">Enviar via WhatsApp</a>
+        <button type="button" class="btn btn-ghost-menu w-100" @click="resetAfterOrder()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function menuApp() {
+  return {
+    tenant: {{ menu_data.tenant | tojson }},
+    products: (() => {
+      const map = {};
+      {{ menu_data.categories | tojson }}.forEach(cat => { cat.products.forEach(p => { map[p.id] = p; }); });
+      return map;
+    })(),
+    cart: {},
+    showCart: false,
+    showCheckout: false,
+    submitting: false,
+    errorMessage: null,
+    confirmedOrder: null,
+
+    selectedProduct: null,
+    modalSelections: {},   // { groupId: Set(optionId) }
+    modalQty: 1,
+    modalValidationError: null,
+
+    checkout: {
+      customer_name: '', customer_phone: '', delivery_type: null,
+      address_street: '', address_number: '', address_complement: '',
+      address_neighborhood: '', address_city: '', address_reference: '',
+      payment_method: 'cash', notes: '',
+    },
+
+    init() { this.checkout.delivery_type = this.tenant.pickup_enabled ? 'pickup' : 'delivery'; },
+
+    // --- Modal de produto ---
+    openProductModal(productId) {
+      const product = this.products[productId];
+      if (!product) return;
+      this.selectedProduct = product;
+      this.modalQty = 1;
+      this.modalValidationError = null;
+      this.modalSelections = {};
+      (product.complement_groups || []).forEach(group => { this.modalSelections[group.id] = new Set(); });
+    },
+    closeProductModal() { this.selectedProduct = null; },
+
+    isOptionSelected(group, option) {
+      const set = this.modalSelections[group.id];
+      return set ? set.has(option.id) : false;
+    },
+    toggleOption(group, option) {
+      const set = this.modalSelections[group.id] || new Set();
+      if (group.single_choice) {
+        set.clear();
+        set.add(option.id);
+      } else if (set.has(option.id)) {
+        set.delete(option.id);
+      } else {
+        set.add(option.id);
+      }
+      this.modalSelections[group.id] = new Set(set);
+      this.modalValidationError = null;
+    },
+    modalSelectedOptionIds() {
+      const ids = [];
+      Object.values(this.modalSelections).forEach(set => set.forEach(id => ids.push(id)));
+      return ids;
+    },
+    modalUnitPriceCents() {
+      if (!this.selectedProduct) return 0;
+      let price = this.selectedProduct.price_cents;
+      (this.selectedProduct.complement_groups || []).forEach(group => {
+        const set = this.modalSelections[group.id];
+        if (!set) return;
+        group.options.forEach(opt => { if (set.has(opt.id)) price += opt.extra_price_cents; });
+      });
+      return price;
+    },
+    modalSelectedChoices() {
+      const choices = [];
+      (this.selectedProduct.complement_groups || []).forEach(group => {
+        const set = this.modalSelections[group.id];
+        if (!set) return;
+        group.options.forEach(opt => {
+          if (set.has(opt.id)) choices.push({ group_name: group.name, option_name: opt.name, extra_price_cents: opt.extra_price_cents });
+        });
+      });
+      return choices;
+    },
+
+    addSelectedProductToCart() {
+      const missing = (this.selectedProduct.complement_groups || []).filter(
+        g => g.is_required && (!this.modalSelections[g.id] || this.modalSelections[g.id].size === 0)
+      );
+      if (missing.length > 0) {
+        this.modalValidationError = `Escolha uma opção para "${missing[0].name}" antes de continuar.`;
+        return;
+      }
+
+      const optionIds = this.modalSelectedOptionIds().sort((a, b) => a - b);
+      const cartKey = this.selectedProduct.id + '::' + optionIds.join(',');
+      const unitPrice = this.modalUnitPriceCents();
+
+      if (this.cart[cartKey]) {
+        this.cart[cartKey].quantity += this.modalQty;
+      } else {
+        this.cart[cartKey] = {
+          product_id: this.selectedProduct.id,
+          name: this.selectedProduct.name,
+          unit_price_cents: unitPrice,
+          quantity: this.modalQty,
+          option_ids: optionIds,
+          choices: this.modalSelectedChoices(),
+        };
+      }
+      this.closeProductModal();
+    },
+
+    // --- Carrinho ---
+    incrementCartItem(cartKey) { this.cart[cartKey].quantity += 1; },
+    decrementCartItem(cartKey) {
+      this.cart[cartKey].quantity -= 1;
+      if (this.cart[cartKey].quantity <= 0) delete this.cart[cartKey];
+    },
+    itemCount() { return Object.values(this.cart).reduce((sum, item) => sum + item.quantity, 0); },
+    subtotalCents() { return Object.values(this.cart).reduce((sum, item) => sum + item.unit_price_cents * item.quantity, 0); },
+    totalWithDeliveryCents() {
+      let fee = this.checkout.delivery_type === 'delivery' ? (this.tenant.delivery_fee_cents || 0) : 0;
+      if (this.tenant.free_delivery_above_cents && this.subtotalCents() >= this.tenant.free_delivery_above_cents) fee = 0;
+      return this.subtotalCents() + fee;
+    },
+    formatCents(cents) { return (cents / 100).toFixed(2); },
+
+    async submitOrder() {
+      this.errorMessage = null;
+
+      if (this.tenant.min_order_cents && this.subtotalCents() < this.tenant.min_order_cents) {
+        this.errorMessage = `Pedido mínimo de R$ ${this.formatCents(this.tenant.min_order_cents)}.`;
+        return;
+      }
+
+      this.submitting = true;
+      const items = Object.values(this.cart).map(item => ({
+        product_id: item.product_id, quantity: item.quantity, option_ids: item.option_ids,
+      }));
+      const payload = { ...this.checkout, items };
+
+      try {
+        const resp = await fetch(window.location.pathname + '/pedido', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json();
+        if (!resp.ok) { this.errorMessage = data.error || 'Não foi possível enviar o pedido.'; this.submitting = false; return; }
+        this.confirmedOrder = data;
+        this.showCheckout = false;
+      } catch (err) {
+        this.errorMessage = 'Falha de conexão. Verifique sua internet e tente novamente.';
+      } finally {
+        this.submitting = false;
+      }
+    },
+
+    resetAfterOrder() { this.cart = {}; this.confirmedOrder = null; this.checkout.notes = ''; },
+  };
+}
+</script>
+{% endblock %}

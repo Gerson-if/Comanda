@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>{% block title %}Comanda{% endblock %}</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/comanda.css') }}">
+
+<script defer src="{{ url_for('static', filename='vendor/alpinejs/alpine.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/htmx/htmx.min.js') }}"></script>
+{% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}" hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="toast-flash-stack">
+    {% for category, message in messages %}
+    <div class="toast-flash toast-flash-{{ category if category in ['success','danger','warning','info'] else 'secondary' }}" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)">
+      <span>{{ message }}</span>
+      <button type="button" @click="show = false" aria-label="Fechar">&times;</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

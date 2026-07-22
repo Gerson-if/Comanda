@@ -1,0 +1,166 @@
+{% extends "layouts/admin_panel.html" %}
+{% block title %}{{ tenant.name }} — Comanda Admin{% endblock %}
+{% block page_title %}{{ tenant.name }}{% endblock %}
+
+{% block panel_content %}
+<a href="{{ url_for('admin.tenants_list') }}" class="link-chili small d-inline-block mb-3">&larr; Voltar para lojistas</a>
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    {% include "admin/tenants/_status_badge.html" %}
+    {% if tenant.blocked_reason %}<p class="text-muted-custom small mt-2 mb-0">Motivo: {{ tenant.blocked_reason }}</p>{% endif %}
+  </div>
+  <a href="{{ url_for('admin.tenants_edit', tenant_id=tenant.id) }}" class="btn btn-sm btn-outline-secondary">Editar dados</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="panel mb-4">
+      <div class="panel-title"><i class="bi bi-shop"></i> Dados da loja</div>
+      <dl class="row small mb-0">
+        <dt class="col-4 text-muted-custom">E-mail</dt><dd class="col-8">{{ tenant.email }}</dd>
+        <dt class="col-4 text-muted-custom">Telefone</dt><dd class="col-8">{{ tenant.phone or "—" }}</dd>
+        <dt class="col-4 text-muted-custom">WhatsApp</dt><dd class="col-8">{{ tenant.whatsapp_number or "—" }}</dd>
+        <dt class="col-4 text-muted-custom">Plano</dt><dd class="col-8">{{ tenant.plan.name if tenant.plan else "Sem plano" }}</dd>
+        <dt class="col-4 text-muted-custom">Link do cardápio</dt><dd class="col-8"><a href="/loja/{{ tenant.slug }}" target="_blank" class="link-chili">/loja/{{ tenant.slug }}</a></dd>
+        <dt class="col-4 text-muted-custom">Cadastrada em</dt><dd class="col-8">{{ tenant.created_at.strftime("%d/%m/%Y") }}</dd>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><i class="bi bi-receipt-cutoff"></i> Faturas</div>
+
+      {% if not asaas_configured %}
+      <div class="alert alert-secondary py-2 small mb-3">
+        <i class="bi bi-info-circle"></i>
+        Cobrança automática via Asaas não está configurada. Defina
+        <code>ASAAS_API_KEY</code> nas variáveis de ambiente para gerar
+        boleto/Pix/cartão automaticamente por fatura — até lá, marque as
+        faturas como pagas manualmente.
+      </div>
+      {% endif %}
+
+      {% if invoices %}
+      <table class="table table-borderless table-sm mb-4" style="color: var(--card-text);">
+        <thead class="text-muted-custom small text-uppercase"><tr><th>Vencimento</th><th>Valor</th><th>Status</th><th>Cobrança</th><th class="text-end">Ações</th></tr></thead>
+        <tbody>
+          {% for invoice in invoices %}
+          <tr style="border-top: 1px solid var(--card-border);">
+            <td>{{ invoice.due_date.strftime("%d/%m/%Y") }}</td>
+            <td>R$ {{ "%.2f"|format(invoice.amount_cents / 100) }}</td>
+            <td>
+              {% if invoice.status.value == 'paid' %}<span class="status-badge status-active">Paga</span>
+              {% elif invoice.status.value == 'overdue' %}<span class="status-badge status-blocked">Vencida</span>
+              {% elif invoice.status.value == 'canceled' %}<span class="status-badge status-suspended">Cancelada</span>
+              {% else %}<span class="status-badge status-trial">Pendente</span>{% endif %}
+            </td>
+            <td>
+              {% if invoice.payment_link_url %}
+              <a href="{{ invoice.payment_link_url }}" target="_blank" class="link-chili small">
+                <i class="bi bi-box-arrow-up-right"></i> Link de pagamento
+              </a>
+              {% elif asaas_configured and invoice.status.value in ('pending', 'overdue') %}
+              <form method="POST" action="{{ url_for('admin.invoices_generate_asaas_charge', invoice_id=invoice.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Gerar cobrança Asaas</button>
+              </form>
+              {% else %}
+              <span class="text-muted-custom small">—</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if invoice.status.value in ('pending', 'overdue') %}
+              <form method="POST" action="{{ url_for('admin.invoices_mark_paid', invoice_id=invoice.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Marcar paga</button>
+              </form>
+              {% endif %}
+              {% if invoice.status.value == 'pending' %}
+              <form method="POST" action="{{ url_for('admin.invoices_mark_overdue', invoice_id=invoice.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Vencida</button>
+              </form>
+              {% endif %}
+              {% if invoice.status.value in ('pending', 'overdue') %}
+              <form method="POST" action="{{ url_for('admin.invoices_cancel', invoice_id=invoice.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted-custom small mb-4">Nenhuma fatura lançada ainda.</p>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('admin.invoices_create', tenant_id=tenant.id) }}" class="d-flex flex-wrap align-items-end gap-2" style="border-top: 1px solid var(--card-border); padding-top: 16px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div><label class="form-label small">Valor (R$)</label><input type="number" step="0.01" min="0.01" name="amount" class="form-control form-control-sm" style="width: 140px;" required></div>
+        <div><label class="form-label small">Vencimento</label><input type="date" name="due_date" class="form-control form-control-sm" required></div>
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Lançar fatura</button>
+      </form>
+    </div>
+  </div>
+
+
+  <div class="col-lg-4">
+    <div class="panel mb-4" x-data="{ openAction: null }">
+      <div class="panel-title"><i class="bi bi-toggles"></i> Ações da conta</div>
+      <div class="d-grid gap-2">
+        {% if tenant.status.value != 'active' %}
+        <form method="POST" action="{{ url_for('admin.tenants_activate', tenant_id=tenant.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-secondary w-100">✅ Ativar conta</button>
+        </form>
+        {% endif %}
+
+        {% if tenant.status.value != 'suspended' %}
+        <div>
+          <button type="button" class="btn btn-sm btn-outline-secondary w-100" @click="openAction = (openAction === 'suspend' ? null : 'suspend')">⏸️ Suspender</button>
+          <form x-show="openAction === 'suspend'" x-cloak method="POST" action="{{ url_for('admin.tenants_suspend', tenant_id=tenant.id) }}" class="mt-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="reason" class="form-control form-control-sm mb-2" rows="2" placeholder="Motivo (opcional)" maxlength="255"></textarea>
+            <button type="submit" class="btn btn-sm btn-chili w-100">Confirmar suspensão</button>
+          </form>
+        </div>
+        {% endif %}
+
+        {% if tenant.status.value != 'blocked_payment' %}
+        <div>
+          <button type="button" class="btn btn-sm btn-outline-secondary w-100" @click="openAction = (openAction === 'block' ? null : 'block')">🚫 Bloquear por inadimplência</button>
+          <form x-show="openAction === 'block'" x-cloak method="POST" action="{{ url_for('admin.tenants_block', tenant_id=tenant.id) }}" class="mt-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="reason" class="form-control form-control-sm mb-2" rows="2" placeholder="Motivo (opcional)" maxlength="255"></textarea>
+            <button type="submit" class="btn btn-sm btn-chili w-100">Confirmar bloqueio</button>
+          </form>
+        </div>
+        {% endif %}
+
+        {% if tenant.status.value != 'canceled' %}
+        <div>
+          <button type="button" class="btn btn-sm btn-outline-danger w-100" @click="openAction = (openAction === 'cancel' ? null : 'cancel')">⛔ Cancelar conta</button>
+          <form x-show="openAction === 'cancel'" x-cloak method="POST" action="{{ url_for('admin.tenants_cancel', tenant_id=tenant.id) }}" class="mt-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="reason" class="form-control form-control-sm mb-2" rows="2" placeholder="Motivo (opcional)" maxlength="255"></textarea>
+            <button type="submit" class="btn btn-sm btn-outline-danger w-100">Confirmar cancelamento</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="panel" style="border-color: #C93522;">
+      <div class="panel-title text-danger"><i class="bi bi-exclamation-triangle"></i> Zona de risco</div>
+      <p class="text-muted-custom small mb-3">Exclui permanentemente a loja e todos os seus dados. Não pode ser desfeito.</p>
+      <form method="POST" action="{{ url_for('admin.tenants_delete', tenant_id=tenant.id) }}" hx-boost="false"
+            onsubmit="return confirm('Excluir permanentemente {{ tenant.name }} e TODOS os seus dados?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger w-100">Excluir loja permanentemente</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

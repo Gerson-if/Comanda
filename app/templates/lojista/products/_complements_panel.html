@@ -1,0 +1,76 @@
+<div class="panel" id="complements-panel">
+  <div class="panel-title"><i class="bi bi-list-ul"></i> Variações &amp; Complementos</div>
+
+  {% if product.complement_groups %}
+  <div class="mb-3">
+    {% for group in product.complement_groups %}
+    <div class="border rounded p-3 mb-2" style="border-color: var(--card-border) !important;">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <strong>{{ group.name }}</strong>
+          <div class="text-muted-custom small">
+            {{ "Variação" if group.is_variation else "Complemento" }}
+            · {{ "Obrigatório" if group.is_required else "Opcional" }}
+            · {{ "Escolha única" if group.single_choice else "Múltipla escolha" }}
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger"
+                hx-post="{{ url_for('lojista.complement_groups_delete', product_id=product.id, group_id=group.id) }}"
+                hx-target="#complements-panel" hx-swap="outerHTML"
+                hx-confirm="Excluir o grupo '{{ group.name }}' e todas as suas opções?">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+
+      {% if group.options %}
+      <table class="table table-sm mb-2" style="color: var(--card-text);">
+        <tbody>
+          {% for option in group.options %}
+          <tr>
+            <td>{{ option.name }}</td>
+            <td class="text-muted-custom">{{ "+ R$ %.2f"|format(option.extra_price_cents / 100) if option.extra_price_cents else "sem custo adicional" }}</td>
+            <td class="text-end">
+              <button type="button" class="btn btn-sm btn-outline-danger"
+                      hx-post="{{ url_for('lojista.complement_options_delete', product_id=product.id, option_id=option.id) }}"
+                      hx-target="#complements-panel" hx-swap="outerHTML"
+                      hx-confirm="Remover a opção '{{ option.name }}'?">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted-custom small mb-2">Nenhuma opção cadastrada neste grupo ainda.</p>
+      {% endif %}
+
+      <form hx-post="{{ url_for('lojista.complement_options_create', product_id=product.id, group_id=group.id) }}"
+            hx-target="#complements-panel" hx-swap="outerHTML" class="d-flex gap-2">
+        {{ option_form.hidden_tag() }}
+        {{ option_form.name(class="form-control form-control-sm", placeholder="Nome da opção", maxlength=100) }}
+        {{ option_form.extra_price(class="form-control form-control-sm", placeholder="0.00", style="max-width: 110px;") }}
+        <button type="submit" class="btn btn-sm btn-outline-chili text-nowrap">+ Opção</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted-custom small mb-3">Nenhum grupo de variação/complemento cadastrado ainda.</p>
+  {% endif %}
+
+  <hr style="border-color: var(--card-border);">
+
+  <form hx-post="{{ url_for('lojista.complement_groups_create', product_id=product.id) }}"
+        hx-target="#complements-panel" hx-swap="outerHTML">
+    {{ group_form.hidden_tag() }}
+    <label class="form-label small fw-semibold">Novo grupo</label>
+    {{ group_form.name(class="form-control form-control-sm mb-2", placeholder="Ex: Tamanho, Molhos", maxlength=100) }}
+    <div class="d-flex flex-wrap gap-3 mb-2 small">
+      <label class="d-flex align-items-center gap-1">{{ group_form.is_variation() }} É variação do produto</label>
+      <label class="d-flex align-items-center gap-1">{{ group_form.is_required() }} Obrigatório</label>
+      <label class="d-flex align-items-center gap-1">{{ group_form.single_choice() }} Escolha única</label>
+    </div>
+    <button type="submit" class="btn btn-sm btn-outline-chili">+ Adicionar grupo</button>
+  </form>
+</div>

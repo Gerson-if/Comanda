@@ -1,0 +1,106 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}Vendas e Relatórios — Comanda{% endblock %}
+{% block page_title %}Vendas e Relatórios{% endblock %}
+
+{% block panel_content %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="kpi-card">
+      <div><div class="kpi-label">Hoje</div><div class="kpi-value">R$ {{ "%.2f"|format(summary.revenue_today_cents / 100) }}</div></div>
+      <div class="kpi-icon" style="background: var(--accent);"><i class="bi bi-cash-coin"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="kpi-card">
+      <div><div class="kpi-label">Esta semana</div><div class="kpi-value">R$ {{ "%.2f"|format(summary.revenue_week_cents / 100) }}</div></div>
+      <div class="kpi-icon" style="background: var(--turmeric);"><i class="bi bi-calendar-week"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="kpi-card">
+      <div><div class="kpi-label">Este mês</div><div class="kpi-value">R$ {{ "%.2f"|format(summary.revenue_month_cents / 100) }}</div></div>
+      <div class="kpi-icon" style="background: var(--sage);"><i class="bi bi-calendar-month"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="kpi-card">
+      <div><div class="kpi-label">Total histórico</div><div class="kpi-value">R$ {{ "%.2f"|format(summary.revenue_total_cents / 100) }}</div></div>
+      <div class="kpi-icon" style="background: var(--card-border);"><i class="bi bi-bank"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="panel">
+      <div class="panel-title"><i class="bi bi-graph-up"></i> Receita — últimos 14 dias</div>
+      <div class="chart-container"><canvas id="revenueChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="panel h-100">
+      <div class="panel-title"><i class="bi bi-pie-chart"></i> Pedidos por status</div>
+      <ul class="list-unstyled small mb-0">
+        {% for status, count in status_counts.items() %}
+        <li class="d-flex justify-content-between py-1" style="border-bottom: 1px solid var(--card-border);">
+          <span class="text-muted-custom">{{ status_labels.get(status, status) if status_labels else status }}</span>
+          <span class="text-white fw-semibold">{{ count }}</span>
+        </li>
+        {% else %}
+        <li class="text-muted-custom">Nenhum pedido registrado ainda.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="panel mt-4">
+  <div class="panel-title"><i class="bi bi-trophy"></i> Produtos mais vendidos</div>
+  {% if top_products %}
+  <table class="table table-borderless table-sm mb-0" style="color: var(--card-text);">
+    <thead class="text-muted-custom small text-uppercase">
+      <tr><th>Produto</th><th class="text-center">Quantidade vendida</th><th class="text-end">Receita gerada</th></tr>
+    </thead>
+    <tbody>
+      {% for product in top_products %}
+      <tr style="border-top: 1px solid var(--card-border);">
+        <td>{{ product.name }}</td>
+        <td class="text-center">{{ product.quantity }}</td>
+        <td class="text-end">R$ {{ "%.2f"|format(product.revenue_cents / 100) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted-custom small mb-0">Ainda não há vendas suficientes para calcular um ranking de produtos.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.js') }}"></script>
+<script>
+  const dailyData = {{ daily_series | tojson }};
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+      labels: dailyData.map(d => d.date.slice(5)),
+      datasets: [{
+        label: 'Receita (R$)',
+        data: dailyData.map(d => d.revenue_cents / 100),
+        borderColor: '#E54A36',
+        backgroundColor: 'rgba(229,74,54,0.12)',
+        tension: 0.3, fill: true,
+      }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.06)' }, ticks: { color: '#AFA491' } },
+        x: { grid: { display: false }, ticks: { color: '#AFA491' } },
+      },
+      maintainAspectRatio: false,
+    },
+  });
+</script>
+{% endblock %}

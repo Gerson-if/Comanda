@@ -1,0 +1,90 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}Dashboard — {{ tenant.name }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block panel_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    {% set status = tenant.status.value %}
+    <span class="status-badge
+      {%- if status == 'active' %} status-active
+      {%- elif status == 'trial' %} status-trial
+      {%- elif status == 'blocked_payment' %} status-blocked
+      {%- else %} status-suspended{% endif %}">
+      {{ status | capitalize }}
+    </span>
+  </div>
+  <div x-data="{ copied: false }" class="d-flex align-items-center gap-2">
+    <input type="text" class="form-control form-control-sm font-mono" style="width: 260px;" readonly value="{{ cardapio_url_absolute }}">
+    <button type="button" class="btn btn-sm btn-outline-secondary"
+      @click="navigator.clipboard.writeText('{{ cardapio_url_absolute }}'); copied = true; setTimeout(() => copied = false, 2000)">
+      <span x-show="!copied">Copiar link</span><span x-show="copied">Copiado!</span>
+    </button>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <a href="{{ url_for('lojista.reports_dashboard') }}" class="text-decoration-none">
+      <div class="kpi-card">
+        <div><div class="kpi-label">Vendido hoje</div><div class="kpi-value">R$ {{ "%.2f"|format(revenue_summary.revenue_today_cents / 100) }}</div></div>
+        <div class="kpi-icon" style="background: var(--accent);"><i class="bi bi-cash-coin"></i></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-lg-3">
+    <a href="{{ url_for('lojista.orders_list') }}" class="text-decoration-none">
+      <div class="kpi-card">
+        <div><div class="kpi-label">Pedidos</div><div class="kpi-value">{{ total_orders }}</div></div>
+        <div class="kpi-icon" style="background: var(--turmeric);"><i class="bi bi-receipt"></i></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-lg-3">
+    <a href="{{ url_for('lojista.products_list') }}" class="text-decoration-none">
+      <div class="kpi-card">
+        <div><div class="kpi-label">Produtos</div><div class="kpi-value">{{ total_products }}</div></div>
+        <div class="kpi-icon" style="background: var(--sage);"><i class="bi bi-egg-fried"></i></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-lg-3">
+    <a href="{{ url_for('lojista.categories_list') }}" class="text-decoration-none">
+      <div class="kpi-card">
+        <div><div class="kpi-label">Categorias</div><div class="kpi-value">{{ total_categories }}</div></div>
+        <div class="kpi-icon" style="background: var(--card-border);"><i class="bi bi-tag"></i></div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <a href="{{ url_for('lojista.orders_list', status='pending') }}" class="text-decoration-none">
+      <div class="panel h-100">
+        <div class="feature-icon-box mb-2" style="width:44px;height:44px;border-radius:10px;background:rgba(229,74,54,.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:1.3rem;"><i class="bi bi-bell"></i></div>
+        <div class="text-white fw-semibold">Novos pedidos</div>
+        <div class="text-muted-custom small">Aceite ou recuse rapidamente</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('lojista.banners_list') }}" class="text-decoration-none">
+      <div class="panel h-100">
+        <div class="feature-icon-box mb-2" style="width:44px;height:44px;border-radius:10px;background:rgba(240,173,78,.12);color:var(--turmeric);display:flex;align-items:center;justify-content:center;font-size:1.3rem;"><i class="bi bi-images"></i></div>
+        <div class="text-white fw-semibold">Banners do cardápio</div>
+        <div class="text-muted-custom small">Destaque promoções na página pública</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('lojista.settings_menu') }}" class="text-decoration-none">
+      <div class="panel h-100">
+        <div class="feature-icon-box mb-2" style="width:44px;height:44px;border-radius:10px;background:rgba(122,160,109,.12);color:var(--sage);display:flex;align-items:center;justify-content:center;font-size:1.3rem;"><i class="bi bi-qr-code"></i></div>
+        <div class="text-white fw-semibold">Link e QR Code</div>
+        <div class="text-muted-custom small">Compartilhe seu cardápio</div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

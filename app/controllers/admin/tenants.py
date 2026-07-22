@@ -1,0 +1,165 @@
+from flask import flash, redirect, render_template, request, url_for
+
+from app.forms.admin_forms import TenantCreateForm, TenantEditForm, TenantStatusReasonForm
+from app.repositories.plan_repository import PlanRepository
+from app.services.admin_billing_service import AdminBillingService
+from app.services.admin_tenant_service import AdminTenantService, TenantAdminError
+from app.utils.decorators import super_admin_required
+
+from app.controllers.admin import admin_bp
+
+
+def _populate_plan_choices(form):
+    plans = PlanRepository().list_ordered()
+    form.plan_id.choices = [(0, "Sem plano")] + [(p.id, p.name) for p in plans]
+
+
+@admin_bp.route("/lojistas")
+@super_admin_required
+def tenants_list():
+    term = request.args.get("q", "").strip()
+    status = request.args.get("status", "").strip()
+    page = request.args.get("page", 1, type=int)
+
+    service = AdminTenantService()
+    pagination = service.repo.search_paginated(page=page, per_page=20, term=term, status=status)
+
+    return render_template(
+        "admin/tenants/list.html",
+        tenants=pagination.items,
+        pagination=pagination,
+        term=term,
+        status=status,
+    )
+
+
+@admin_bp.route("/lojistas/novo", methods=["GET", "POST"])
+@super_admin_required
+def tenants_create():
+    form = TenantCreateForm()
+    _populate_plan_choices(form)
+
+    if form.validate_on_submit():
+        service = AdminTenantService()
+        try:
+            tenant = service.create(
+                name=form.name.data,
+                email=form.email.data,
+                phone=form.phone.data,
+                whatsapp_number=form.whatsapp_number.data,
+                plan_id=form.plan_id.data or None,
+                owner_name=form.owner_name.data,
+                owner_email=form.owner_email.data,
+                owner_password=form.owner_password.data,
+            )
+        except TenantAdminError as exc:
+            flash(str(exc), "danger")
+        else:
+            flash(f"Loja '{tenant.name}' criada com sucesso.", "success")
+            return redirect(url_for("admin.tenants_detail", tenant_id=tenant.id))
+
+    return render_template("admin/tenants/form.html", form=form, tenant=None)
+
+
+@admin_bp.route("/lojistas/<int:tenant_id>")
+@super_admin_required
+def tenants_detail(tenant_id):
+    service = AdminTenantService()
+    tenant = service.get_or_404(tenant_id)
+
+    billing_service = AdminBillingService()
+    invoices = billing_service.list_invoices_for_tenant(tenant.id)
+    reason_form = TenantStatusReasonForm()
+
+    return render_template(
+        "admin/tenants/detail.html",
+        tenant=tenant,
+        invoices=invoices,
+        reason_form=reason_form,
+        asaas_configured=billing_service.is_asaas_configured(),
+    )
+
+
+@admin_bp.route("/lojistas/<int:tenant_id>/editar", methods=["GET", "POST"])
+@super_admin_required
+def tenants_edit(tenant_id):
+    service = AdminTenantService()
+    tenant = service.get_or_404(tenant_id)
+
+    form = TenantEditForm(obj=tenant)
+    if request.method == "GET":
+        form.plan_id.data = tenant.plan_id or 0
+    _populate_plan_choices(form)
+
+    if form.validate_on_submit():
+        try:
+            service.update(
+                tenant,
+                name=form.name.data,
+                email=form.email.data,
+                phone=form.phone.data,
+                whatsapp_number=form.whatsapp_number.data,
+                plan_id=form.plan_id.data or None,
+            )
+        except TenantAdminError as exc:
+            flash(str(exc), "danger")
+        else:
+            flash("Dados da loja atualizados.", "success")
+            return redirect(url_for("admin.tenants_detail", tenant_id=tenant.id))
+
+    return render_template("admin/tenants/form.html", form=form, tenant=tenant)
+
+
+@admin_bp.route("/lojistas/<int:tenant_id>/excluir", methods=["POST"])
+@super_admin_required
+def tenants_delete(tenant_id):
+    service = AdminTenantService()
+    tenant = service.get_or_404(tenant_id)
+    name = tenant.name
+
+    service.delete(tenant)
+    flash(f"Loja '{name}' e todos os seus dados foram excluídos permanentemente.", "info")
+    return redirect(url_for("admin.tenants_list"))
+
+
+@admin_bp.route("/lojistas/<int:tenant_id>/ativar", methods=["POST"])
+@super_admin_required
+def tenants_activate(tenant_id):
+    service = AdminTenantService()
+    tenant = service.get_or_404(tenant_id)
+    service.activate(tenant)
+    flash(f"Loja '{tenant.name}' ativada.", "success")
+    return redirect(url_for("admin.tenants_detail", tenant_id=tenant.id))
+
+
+@admin_bp.route("/lojistas/<int:tenant_id>/suspender", methods=["POST"])
+@super_admin_required
+def tenants_suspend(tenant_id):
+    service = AdminTenantService()
+    tenant = service.get_or_404(tenant_id)
+    reason = request.form.get("reason")
+    service.suspend(tenant, reason=reason)
+    flash(f"Loja '{tenant.name}' suspensa.", "warning")
+    return redirect(url_for("admin.tenants_detail", tenant_id=tenant.id))
+
+
+@admin_bp.route("/lojistas/<int:tenant_id>/bloquear", methods=["POST"])
+@super_admin_required
+def tenants_block(tenant_id):
+    service = AdminTenantService()
+    tenant = service.get_or_404(tenant_id)
+    reason = request.form.get("reason")
+    service.block_for_payment(tenant, reason=reason)
+    flash(f"Loja '{tenant.name}' bloqueada por inadimplência.", "warning")
+    return redirect(url_for("admin.tenants_detail", tenant_id=tenant.id))
+
+
+@admin_bp.route("/lojistas/<int:tenant_id>/cancelar", methods=["POST"])
+@super_admin_required
+def tenants_cancel(tenant_id):
+    service = AdminTenantService()
+    tenant = service.get_or_404(tenant_id)
+    reason = request.form.get("reason")
+    service.cancel(tenant, reason=reason)
+    flash(f"Loja '{tenant.name}' cancelada.", "danger")
+    return redirect(url_for("admin.tenants_detail", tenant_id=tenant.id))

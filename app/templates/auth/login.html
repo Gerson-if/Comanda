@@ -1,0 +1,40 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Entrar — Comanda{% endblock %}
+{% block auth_title %}Acesse sua Conta{% endblock %}
+{% block auth_subtitle %}Gerenciador administrativo da sua loja{% endblock %}
+
+{% block auth_content %}
+<form method="POST" novalidate>
+  {{ form.hidden_tag() }}
+
+  <div class="mb-3">
+    {{ form.email.label(class="form-label small fw-semibold") }}
+    {{ form.email(class="form-control" + (" border-danger" if form.email.errors else ""), placeholder="nome@sualoja.com", autofocus=true, maxlength=180) }}
+    {% for error in form.email.errors %}
+      <p class="upload-error mt-1">{{ error }}</p>
+    {% endfor %}
+  </div>
+
+  <div class="mb-4">
+    <div class="d-flex justify-content-between mb-1">
+      {{ form.password.label(class="form-label small fw-semibold", **{"style": "margin:0;"}) }}
+      <a href="{{ url_for('auth.forgot_password') }}" class="link-chili small">Esqueci a senha</a>
+    </div>
+    {{ form.password(class="form-control" + (" border-danger" if form.password.errors else ""), placeholder="••••••••", maxlength=128) }}
+    {% for error in form.password.errors %}
+      <p class="upload-error mt-1">{{ error }}</p>
+    {% endfor %}
+  </div>
+
+  <div class="d-flex align-items-center gap-2 mb-4">
+    {{ form.remember_me() }}
+    {{ form.remember_me.label(class="form-check-label small text-muted-custom") }}
+  </div>
+
+  {{ form.submit(class="btn btn-chili w-100") }}
+</form>
+
+<div class="text-center small mt-3 text-muted-custom">
+  Novo por aqui? <a href="{{ url_for('auth.register') }}" class="link-chili">Cadastrar estabelecimento</a>
+</div>
+{% endblock %}

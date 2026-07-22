@@ -1,0 +1,46 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}Configurações — Cardápio &amp; Link{% endblock %}
+{% block page_title %}Configurações{% endblock %}
+
+{% block panel_content %}
+{% include "lojista/settings/_tabs.html" %}
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="panel">
+      <div class="panel-title"><i class="bi bi-link-45deg"></i> Endereço do cardápio</div>
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+          {{ form.slug.label(class="form-label small fw-semibold") }}
+          <div class="input-group">
+            <span class="input-group-text font-mono small">/loja/</span>
+            {{ form.slug(class="form-control font-mono", maxlength=150, **{"oninput": "this.value = this.value.toLowerCase().replace(/[^a-z0-9-]+/g,'-')"}) }}
+          </div>
+          {% for error in form.slug.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+          <div class="upload-meta">Cuidado: alterar o endereço quebra links já compartilhados.</div>
+        </div>
+
+        <div class="d-flex flex-column gap-2 mb-4">
+          <label class="d-flex align-items-center gap-2">{{ form.pickup_enabled() }} <span class="small">Aceitar retirada no local</span></label>
+          <label class="d-flex align-items-center gap-2">{{ form.delivery_enabled() }} <span class="small">Aceitar entrega</span></label>
+        </div>
+
+        {{ form.submit(class="btn btn-chili") }}
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="panel text-center">
+      <div class="panel-title justify-content-center"><i class="bi bi-qr-code"></i> QR Code do cardápio</div>
+      <img src="{{ qr_code_url }}" alt="QR Code" class="rounded mb-3" style="background: #fff; padding: 8px;">
+      <div class="font-mono small text-muted-custom mb-3">{{ cardapio_url }}</div>
+      <a href="{{ qr_code_url }}" download="qrcode-cardapio.png" class="btn btn-sm btn-outline-secondary" target="_blank">
+        <i class="bi bi-download"></i> Baixar QR Code
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

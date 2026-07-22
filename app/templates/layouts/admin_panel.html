@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block body_class %}theme-blue{% endblock %}
+
+{% block content %}
+<div class="app-shell" x-data="{ sidebarOpen: false, collapsed: false }">
+  <div class="sidebar-backdrop" :class="{show: sidebarOpen}" @click="sidebarOpen = false"></div>
+
+  <aside class="sidebar" :class="{show: sidebarOpen, 'is-collapsed': collapsed}">
+    <div class="sidebar-brand">
+      <div class="mark"><i class="bi bi-shield-lock text-white"></i></div>
+      <div>
+        <div class="font-display text-white" style="font-size: 1rem; line-height: 1;">COMANDA</div>
+        <div class="text-muted-custom" style="font-size: .7rem;">Super Admin</div>
+      </div>
+    </div>
+
+    <nav class="nav-food">
+      <a href="{{ url_for('admin.dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' }}">
+        <i class="bi bi-speedometer2"></i><span class="nav-label">Métricas Core</span>
+      </a>
+      <a href="{{ url_for('admin.tenants_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.tenants') }}">
+        <i class="bi bi-shop"></i><span class="nav-label">Gerenciar Lojistas</span>
+      </a>
+      <a href="{{ url_for('admin.plans_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.plans') }}">
+        <i class="bi bi-sliders"></i><span class="nav-label">Planos &amp; Limites</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="text-white fw-semibold">{{ current_user.name }}</div>
+      <a href="{{ url_for('auth.logout') }}" class="link-chili"><i class="bi bi-box-arrow-left"></i> Sair</a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary d-lg-none" @click="sidebarOpen = true">
+          <i class="bi bi-list"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary d-none d-lg-inline-block" @click="collapsed = !collapsed">
+          <i class="bi bi-layout-sidebar"></i>
+        </button>
+        <h1>{% block page_title %}{% endblock %}</h1>
+      </div>
+    </header>
+
+    <div class="content">
+      {% block panel_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

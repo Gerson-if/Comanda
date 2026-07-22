@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Comanda — Cardápio Digital e Gestão via WhatsApp{% endblock %}
+{% block body_class %}theme-chili{% endblock %}
+
+{% block extra_head %}
+<style>
+  .hero-section { padding: 140px 0 80px 0; background: radial-gradient(circle at 80% 20%, rgba(229,74,54,0.08) 0%, transparent 50%); }
+  .navbar-custom { background: rgba(26,22,18,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--card-border); }
+  .feature-icon-box { width: 48px; height: 48px; border-radius: 10px; background: rgba(229,74,54,0.12); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 20px; }
+  .plan-card { border: 1px solid var(--card-border); transition: transform .2s, border-color .2s; }
+  .plan-card:hover { transform: translateY(-4px); }
+  .plan-card.featured { border-color: var(--accent); position: relative; }
+  .plan-card.featured::after {
+    content: 'MAIS VENDIDO'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #fff; font-family: 'Archivo Black'; font-size: .65rem;
+    padding: 4px 12px; border-radius: 20px; letter-spacing: .05em;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-expand-lg fixed-top navbar-dark navbar-custom py-3">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+      <div class="brand-mark" style="width:36px;height:36px;font-size:1.1rem;"><i class="bi bi-egg-fried text-white"></i></div>
+      <span class="font-display" style="font-size:1.2rem; line-height:1;">COMANDA</span>
+    </a>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('auth.login') }}" class="btn-outline-custom py-2 px-3 small" style="font-size:.875rem;">Entrar no Painel</a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-chili py-2 px-3 small" style="font-size:.875rem;">Criar Minha Loja</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero-section">
+  <div class="container">
+    <div class="row align-items-center pt-4">
+      <div class="col-lg-6 mb-5 mb-lg-0 text-center text-lg-start">
+        <h1 class="font-display display-4 mb-4" style="line-height:1.15;">O Painel Administrativo que seu Delivery merece.</h1>
+        <p class="lead text-muted-custom mb-4" style="font-size:1.1rem; line-height:1.6;">Crie seu cardápio web em minutos, receba comandas organizadas via WhatsApp, acompanhe métricas de faturamento em tempo real e reduza erros de entrega.</p>
+        <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center justify-content-lg-start">
+          <a href="{{ url_for('auth.register') }}" class="btn btn-chili fs-6 px-4">Começar Agora — Grátis</a>
+          <a href="#planos" class="btn-outline-custom text-center fs-6 px-4">Ver Planos de Assinatura</a>
+        </div>
+      </div>
+      <div class="col-lg-6 text-center">
+        <div class="panel text-start shadow-lg mx-auto" style="max-width:480px; border-color:var(--line);">
+          <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary-subtle pb-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="pulse-dot"></span>
+              <strong class="font-mono text-white small">comanda.app/painel</strong>
+            </div>
+            <span class="badge bg-dark border border-secondary text-success small py-1" style="font-size:.7rem;">SISTEMA ONLINE</span>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <div class="p-3 rounded" style="background:var(--ink); border:1px solid var(--card-border);">
+                <div class="small text-muted-custom" style="font-size:.75rem;">FATURAMENTO HOJE</div>
+                <div class="font-display h4 text-white m-0 mt-1">R$ 1.420</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded" style="background:var(--ink); border:1px solid var(--card-border);">
+                <div class="small text-muted-custom" style="font-size:.75rem;">EM PREPARO</div>
+                <div class="font-display h4 text-accent m-0 mt-1">04</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-3 rounded font-mono" style="background:rgba(0,0,0,.2); font-size:.8rem; border-left:3px solid var(--turmeric);">
+            <span class="text-white fw-bold">#1042 · Marina Souza</span>
+            <div class="text-muted-custom mt-1">1x X-Tudo Artesanal Super Recheado</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-5" style="background: var(--ink);">
+  <div class="container py-4">
+    <div class="text-center mb-5">
+      <h2 class="font-display text-white">Criado para simplificar sua operação</h2>
+      <p class="text-muted-custom">Substitua anotações confusas e PDFs estáticos por uma plataforma fluida.</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="panel h-100">
+          <div class="feature-icon-box"><i class="bi bi-phone-vibrate"></i></div>
+          <h4 class="font-display h5 text-white mb-2">Cardápio Ultra Rápido</h4>
+          <p class="text-muted-custom small m-0">Seus clientes visualizam fotos otimizadas, escolhem complementos direto do navegador, sem downloads.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="panel h-100">
+          <div class="feature-icon-box"><i class="bi bi-qr-code-scan"></i></div>
+          <h4 class="font-display h5 text-white mb-2">Gerador de QR Code</h4>
+          <p class="text-muted-custom small m-0">O sistema gera automaticamente o endereço do seu estabelecimento e disponibiliza o QR Code para impressão.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="panel h-100">
+          <div class="feature-icon-box"><i class="bi bi-whatsapp"></i></div>
+          <h4 class="font-display h5 text-white mb-2">Pedidos via WhatsApp</h4>
+          <p class="text-muted-custom small m-0">Cada pedido é registrado no seu painel e enviado com um clique para o WhatsApp da loja, pronto para confirmar.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="planos" class="py-5">
+  <div class="container py-5">
+    <div class="text-center mb-5">
+      <h2 class="font-display text-white">Planos que cabem no bolso da sua operação</h2>
+      <p class="text-muted-custom">Sem comissão por pedido. Você escolhe como quer pagar.</p>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% for plan in plans %}
+      <div class="col-md-5 col-lg-4">
+        <div class="panel plan-card h-100 text-center d-flex flex-column {{ 'featured' if loop.index == 2 }}">
+          <div class="{{ 'text-accent' if loop.index == 2 else 'text-muted-custom' }} small fw-bold text-uppercase">{{ plan.name }}</div>
+          <div class="font-display h2 text-white my-3">R$ {{ "%.2f"|format(plan.price_cents / 100) }}<span style="font-size:.9rem; font-family:'Inter'; font-weight:normal; color:var(--muted-text);">/{{ "ano" if plan.billing_cycle.value == "yearly" else "mês" }}</span></div>
+          <hr class="border-secondary-subtle">
+          <ul class="list-unstyled text-start small text-muted-custom flex-grow-1 my-3">
+            <li class="mb-2"><i class="bi bi-check2 text-accent me-2"></i> {{ plan.max_products if plan.max_products is not none else "Produtos ilimitados" }}{{ " produtos" if plan.max_products is not none else "" }}</li>
+            <li class="mb-2"><i class="bi bi-check2 text-accent me-2"></i> Pedidos via WhatsApp integrados</li>
+            <li class="mb-2"><i class="bi bi-check2 text-accent me-2"></i> Link do cardápio + QR Code</li>
+            {% if plan.description %}<li class="mb-2"><i class="bi bi-check2 text-accent me-2"></i> {{ plan.description }}</li>{% endif %}
+          </ul>
+          <a href="{{ url_for('auth.register') }}" class="{{ 'btn btn-chili' if loop.index == 2 else 'btn-outline-custom text-center' }} w-100 mt-auto">Escolher {{ plan.name }}</a>
+        </div>
+      </div>
+      {% else %}
+      <div class="col-md-8 text-center text-muted-custom">
+        Nenhum plano disponível no momento. <a href="{{ url_for('auth.register') }}" class="link-chili">Crie sua conta</a> mesmo assim — você começa no período de teste.
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<footer class="py-4 text-center text-muted-custom small border-top" style="border-color: var(--card-border) !important;">
+  © {{ current_year }} Comanda. Todos os direitos reservados.
+</footer>
+{% endblock %}
