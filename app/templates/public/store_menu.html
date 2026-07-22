@@ -83,13 +83,17 @@
   .menu-topbar .brand-mark img { width: 100%; height: 100%; object-fit: cover; }
   .menu-topbar .brand-name { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; line-height: 1; }
   .menu-topbar .brand-name small { display: block; font-family: var(--font-mono); font-size: .52rem; color: var(--text-faint); letter-spacing: .04em; }
-  .menu-topbar .cart-icon { position: relative; cursor: pointer; color: var(--text); transition: color .2s; }
+  .menu-topbar .cart-icon { position: relative; cursor: pointer; color: var(--text); transition: color .2s, opacity .2s; }
   .menu-topbar .cart-icon:hover { color: var(--accent); }
   .menu-topbar .cart-badge {
     position: absolute; top: -6px; right: -10px; background: var(--rust); color: #fff; font-size: .6rem; font-weight: 700;
     font-family: var(--font-mono); min-width: 18px; height: 18px; border-radius: 999px; display: flex; align-items: center;
     justify-content: center; border: 2px solid var(--bg); padding: 0 4px;
   }
+  /* Classe global de ocultação com transição suave — usada pelo ícone
+     do carrinho e pelo botão flutuante enquanto qualquer overlay
+     (carrinho, produto ou checkout) está aberto, igual ao template. */
+  .hidden-cart-ui { opacity: 0 !important; pointer-events: none !important; transform: scale(0.95) !important; }
 
   @media (min-width: 992px) {
     .menu-sidebar { transform: translateX(0) !important; }
@@ -132,17 +136,19 @@
   .btn-add { width: 34px; height: 34px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); border: none; display: flex; align-items: center; justify-content: center; transition: .2s; cursor: pointer; flex-shrink: 0; }
   .btn-add:hover { background: var(--accent); color: #1B140F; }
 
-  /* ===== TICKET (carrinho) ===== */
-  .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1070; display: flex; align-items: flex-end; justify-content: center; }
-  @media (min-width: 576px) { .sheet-overlay { align-items: center; } }
-  .sheet { background: var(--bg-soft); border: 1px solid var(--line-strong); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 88vh; display: flex; flex-direction: column; color: var(--text); }
-  .sheet.sheet-lg { max-width: 620px; }
-  @media (min-width: 576px) { .sheet { border-radius: 20px; } }
-  .sheet-head { padding: 18px 22px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
-  .sheet-head h3 { font-family: var(--font-display); margin: 0; font-size: 1.15rem; font-weight: 700; }
-  .sheet-body { padding: 20px 22px; overflow-y: auto; flex-grow: 1; }
-  .sheet-foot { padding: 16px 22px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+  /* ===== OFFCANVAS DO CARRINHO ===== */
+  .offcanvas { background: var(--bg-soft); color: var(--text); border-left: 1px solid var(--line); }
+  .offcanvas .offcanvas-header { border-bottom: 1px solid var(--line); }
+  .offcanvas .offcanvas-title { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; }
+  .offcanvas .btn-close { filter: invert(1) brightness(2); }
 
+  /* ===== MODAL (produto e checkout) ===== */
+  .menu-modal .modal-content { background: var(--bg-soft); color: var(--text); border: 1px solid var(--line-strong); border-radius: 22px; }
+  .menu-modal .modal-header, .menu-modal .modal-footer { border-color: var(--line); }
+  .menu-modal .modal-title { font-family: var(--font-display); font-weight: 700; }
+  .menu-modal .btn-close { filter: invert(1) brightness(2); }
+
+  /* ===== TICKET (carrinho) ===== */
   .ticket { background: var(--paper); color: #2A2116; padding: 20px 18px; border-radius: 6px; font-family: var(--font-mono); font-size: .85rem; }
   .ticket .title { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; text-align: center; color: #2A2116; }
   .ticket .sub { text-align: center; font-size: .62rem; color: #8a7757; margin-bottom: 14px; letter-spacing: .04em; text-transform: uppercase; }
@@ -257,7 +263,7 @@
           <div class="brand-name">{{ tenant.name }}<small>CARDÁPIO DIGITAL</small></div>
         </div>
       </div>
-      <div class="cart-icon" @click="showCart = true">
+      <div class="cart-icon" @click="openCart()" :class="{ 'hidden-cart-ui': cartUiHidden }">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
           <path d="M1 1h4l2.4 12.4a2 2 0 0 0 2 1.6h9.2a2 2 0 0 0 2-1.6L23 6H6"/>
@@ -338,108 +344,115 @@
   </div>
 
   <!-- Botão flutuante do carrinho -->
-  <button type="button" class="cart-fab" x-show="itemCount() > 0" x-cloak @click="showCart = true">
+  <button type="button" class="cart-fab" x-show="itemCount() > 0" x-cloak @click="openCart()" :class="{ 'hidden-cart-ui': cartUiHidden }">
     <span>🧾 <span x-text="itemCount()"></span> ite(ns)</span>
     <span x-text="'R$ ' + formatCents(subtotalCents())"></span>
   </button>
 
   <!-- Modal de produto -->
-  <div class="sheet-overlay" x-show="selectedProduct" x-cloak @click.self="closeProductModal()">
-    <template x-if="selectedProduct">
-      <div class="sheet sheet-lg">
-        <div class="sheet-head">
-          <h3 x-text="selectedProduct.name"></h3>
-          <button type="button" class="btn-close btn-close-white" @click="closeProductModal()"></button>
+  <div class="modal fade menu-modal" id="productModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" x-text="selectedProduct && selectedProduct.name"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-        <div class="sheet-body">
-          <div class="product-modal-media">
-            <template x-if="selectedProduct.image_url"><img :src="selectedProduct.image_url" :alt="selectedProduct.name"></template>
-            <template x-if="!selectedProduct.image_url"><span x-text="categoryEmoji(selectedProductCategoryIcon())"></span></template>
-          </div>
+        <div class="modal-body">
+          <template x-if="selectedProduct">
+            <div>
+              <div class="product-modal-media">
+                <template x-if="selectedProduct.image_url"><img :src="selectedProduct.image_url" :alt="selectedProduct.name"></template>
+                <template x-if="!selectedProduct.image_url"><span x-text="categoryEmoji(selectedProductCategoryIcon())"></span></template>
+              </div>
 
-          <p class="mt-3" style="color: var(--text-dim);" x-show="selectedProduct.description" x-text="selectedProduct.description"></p>
-          <div class="fw-bold fs-4" style="color: var(--accent);" x-text="'R$ ' + formatCents(modalUnitPriceCents())"></div>
+              <p class="mt-3" style="color: var(--text-dim);" x-show="selectedProduct.description" x-text="selectedProduct.description"></p>
+              <div class="fw-bold fs-4" style="color: var(--accent);" x-text="'R$ ' + formatCents(modalUnitPriceCents())"></div>
 
-          <template x-if="modalValidationError">
-            <div class="alert alert-danger py-2 small mt-2" x-text="modalValidationError"></div>
-          </template>
+              <template x-if="modalValidationError">
+                <div class="alert alert-danger py-2 small mt-2" x-text="modalValidationError"></div>
+              </template>
 
-          <template x-if="variationGroups(selectedProduct).length">
-            <div class="mt-3">
-              <div class="nav-label" style="padding:0; margin-bottom:8px;">Variações</div>
-              <template x-for="group in variationGroups(selectedProduct)" :key="group.id">
-                <div class="opt-group">
-                  <div class="label-group">
-                    <span x-text="group.name"></span>
-                    <span class="req" x-show="group.is_required">*obrigatório</span>
-                  </div>
-                  <div>
-                    <template x-for="opt in group.options" :key="opt.id">
-                      <span class="opt-option" :class="{ checked: isOptionSelected(group, opt) }" @click="toggleOption(group, opt)">
-                        <span x-text="opt.name"></span>
-                        <span class="extra" x-text="opt.extra_price_cents > 0 ? '+R$ ' + formatCents(opt.extra_price_cents) : 'grátis'"></span>
-                      </span>
-                    </template>
-                  </div>
+              <template x-if="variationGroups(selectedProduct).length">
+                <div class="mt-3">
+                  <div class="nav-label" style="padding:0; margin-bottom:8px;">Variações</div>
+                  <template x-for="group in variationGroups(selectedProduct)" :key="group.id">
+                    <div class="opt-group">
+                      <div class="label-group">
+                        <span x-text="group.name"></span>
+                        <span class="req" x-show="group.is_required">*obrigatório</span>
+                      </div>
+                      <div>
+                        <template x-for="opt in group.options" :key="opt.id">
+                          <span class="opt-option" :class="{ checked: isOptionSelected(group, opt) }" @click="toggleOption(group, opt)">
+                            <span x-text="opt.name"></span>
+                            <span class="extra" x-text="opt.extra_price_cents > 0 ? '+R$ ' + formatCents(opt.extra_price_cents) : 'grátis'"></span>
+                          </span>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
                 </div>
               </template>
-            </div>
-          </template>
 
-          <template x-if="complementGroups(selectedProduct).length">
-            <div class="mt-3">
-              <div class="nav-label" style="padding:0; margin-bottom:8px;">Capriche no pedido</div>
-              <template x-for="group in complementGroups(selectedProduct)" :key="group.id">
-                <div class="opt-group">
-                  <div class="label-group">
-                    <span x-text="group.name"></span>
-                    <span class="req" x-show="group.is_required">*obrigatório</span>
-                    <span class="optional-tag" x-show="!group.is_required">opcional</span>
-                  </div>
-                  <div>
-                    <template x-for="opt in group.options" :key="opt.id">
-                      <span class="opt-option" :class="{ checked: isOptionSelected(group, opt) }" @click="toggleOption(group, opt)">
-                        <span x-text="opt.name"></span>
-                        <span class="extra" x-text="opt.extra_price_cents > 0 ? '+R$ ' + formatCents(opt.extra_price_cents) : 'sem custo'"></span>
-                      </span>
-                    </template>
-                  </div>
+              <template x-if="complementGroups(selectedProduct).length">
+                <div class="mt-3">
+                  <div class="nav-label" style="padding:0; margin-bottom:8px;">Capriche no pedido</div>
+                  <template x-for="group in complementGroups(selectedProduct)" :key="group.id">
+                    <div class="opt-group">
+                      <div class="label-group">
+                        <span x-text="group.name"></span>
+                        <span class="req" x-show="group.is_required">*obrigatório</span>
+                        <span class="optional-tag" x-show="!group.is_required">opcional</span>
+                      </div>
+                      <div>
+                        <template x-for="opt in group.options" :key="opt.id">
+                          <span class="opt-option" :class="{ checked: isOptionSelected(group, opt) }" @click="toggleOption(group, opt)">
+                            <span x-text="opt.name"></span>
+                            <span class="extra" x-text="opt.extra_price_cents > 0 ? '+R$ ' + formatCents(opt.extra_price_cents) : 'sem custo'"></span>
+                          </span>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
                 </div>
               </template>
+
+              <div class="d-flex align-items-center gap-3 mt-3">
+                <span class="fw-bold small">Quantidade</span>
+                <div class="qty-selector">
+                  <button type="button" @click="modalQty = Math.max(1, modalQty - 1)">−</button>
+                  <span x-text="modalQty"></span>
+                  <button type="button" @click="modalQty++">+</button>
+                </div>
+              </div>
             </div>
           </template>
-
-          <div class="d-flex align-items-center gap-3 mt-3">
-            <span class="fw-bold small">Quantidade</span>
-            <div class="qty-selector">
-              <button type="button" @click="modalQty = Math.max(1, modalQty - 1)">−</button>
-              <span x-text="modalQty"></span>
-              <button type="button" @click="modalQty++">+</button>
-            </div>
-          </div>
         </div>
-        <div class="sheet-foot">
-          <button type="button" class="btn btn-ghost-menu" @click="closeProductModal()">Fechar</button>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-menu" data-bs-dismiss="modal">Fechar</button>
           <button type="button" class="btn btn-accent flex-grow-1" @click="addSelectedProductToCart()">
             Adicionar · <span x-text="'R$ ' + formatCents(modalUnitPriceCents() * modalQty)"></span>
           </button>
         </div>
       </div>
-    </template>
+    </div>
   </div>
 
   <!-- Carrinho (comanda) -->
-  <div class="sheet-overlay" x-show="showCart" x-cloak @click.self="showCart = false">
-    <div class="sheet">
-      <div class="sheet-head"><h3>Sua comanda</h3><button type="button" class="btn-close btn-close-white" @click="showCart = false"></button></div>
-      <div class="sheet-body">
-        <template x-if="Object.keys(cart).length === 0">
-          <div class="text-center py-5" style="color: var(--text-faint);">
-            <div style="font-size: 3rem;">🧾</div>
-            <p>Sua comanda está vazia.<br>Escolha algo gostoso!</p>
-          </div>
-        </template>
-        <template x-if="Object.keys(cart).length > 0">
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" data-bs-backdrop="static">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Sua comanda</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column">
+      <template x-if="Object.keys(cart).length === 0">
+        <div class="text-center py-5" style="color: var(--text-faint);">
+          <div style="font-size: 3rem;">🧾</div>
+          <p>Sua comanda está vazia.<br>Escolha algo gostoso!</p>
+        </div>
+      </template>
+      <template x-if="Object.keys(cart).length > 0">
+        <div>
           <div class="ticket">
             <div class="title">{{ tenant.name }}</div>
             <div class="sub">comanda de pedido</div>
@@ -466,103 +479,111 @@
 
             <div class="total-row"><span>Total</span><span x-text="'R$ ' + formatCents(subtotalCents())"></span></div>
           </div>
-        </template>
-      </div>
-      <div class="sheet-foot">
-        <button type="button" class="btn btn-ghost-menu flex-grow-1" @click="showCart = false">Continuar</button>
-        <button type="button" class="btn btn-accent flex-grow-1" :disabled="itemCount() === 0" @click="showCart = false; showCheckout = true;">Finalizar pedido</button>
-      </div>
+
+          <button type="button" class="btn btn-accent w-100 mt-3" :disabled="itemCount() === 0" @click="startCheckout()" data-bs-dismiss="offcanvas">
+            Finalizar pedido
+          </button>
+        </div>
+      </template>
     </div>
   </div>
 
   <!-- Checkout -->
-  <div class="sheet-overlay" x-show="showCheckout" x-cloak @click.self="showCheckout = false">
-    <div class="sheet">
-      <div class="sheet-head"><h3>Último passo</h3><button type="button" class="btn-close btn-close-white" @click="showCheckout = false"></button></div>
-      <div class="sheet-body checkout-form">
-        <template x-if="errorMessage"><div class="alert alert-danger py-2 small" x-text="errorMessage"></div></template>
-
-        <div class="ticket mb-3">
-          <div class="d-flex justify-content-between"><span>Itens (<span x-text="itemCount()"></span>)</span><span x-text="'R$ ' + formatCents(subtotalCents())"></span></div>
-          <div class="d-flex justify-content-between fw-bold fs-6 mt-1"><span>Total</span><span x-text="'R$ ' + formatCents(totalWithDeliveryCents())"></span></div>
+  <div class="modal fade menu-modal" id="checkoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Último passo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
+        <div class="modal-body checkout-form">
+          <template x-if="errorMessage"><div class="alert alert-danger py-2 small" x-text="errorMessage"></div></template>
 
-        <div class="mb-3">
-          <label>Seu nome</label>
-          <input type="text" class="form-control" x-model="checkout.customer_name" maxlength="150" placeholder="Ex: João Silva">
-        </div>
-
-        <div class="mb-3">
-          <label>WhatsApp / telefone</label>
-          <input type="text" class="form-control" x-model="checkout.customer_phone" maxlength="20" placeholder="Ex: 67999998888">
-        </div>
-
-        <div class="mb-3">
-          <label>Forma de entrega</label>
-          <div class="d-flex gap-2">
-            <template x-if="tenant.pickup_enabled">
-              <button type="button" class="btn flex-fill" :class="checkout.delivery_type === 'pickup' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.delivery_type = 'pickup'">Retirar</button>
-            </template>
-            <template x-if="tenant.delivery_enabled">
-              <button type="button" class="btn flex-fill" :class="checkout.delivery_type === 'delivery' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.delivery_type = 'delivery'">Entrega</button>
-            </template>
+          <div class="ticket mb-3">
+            <div class="d-flex justify-content-between"><span>Itens (<span x-text="itemCount()"></span>)</span><span x-text="'R$ ' + formatCents(subtotalCents())"></span></div>
+            <div class="d-flex justify-content-between fw-bold fs-6 mt-1"><span>Total</span><span x-text="'R$ ' + formatCents(totalWithDeliveryCents())"></span></div>
           </div>
-        </div>
 
-        <template x-if="checkout.delivery_type === 'delivery'">
-          <div class="p-3 mb-3 rounded" style="background: var(--surface); border: 1px solid var(--line);">
-            <p class="small mb-2" style="color: var(--text-dim);">Informe rua, número e bairro (complemento e cidade opcionais).</p>
-            <div class="row g-2">
-              <div class="col-8"><label>Rua</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_street" maxlength="180"></div>
-              <div class="col-4"><label>Número</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_number" maxlength="20"></div>
-              <div class="col-6"><label>Bairro</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_neighborhood" maxlength="100"></div>
-              <div class="col-6"><label>Complemento</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_complement" maxlength="120"></div>
-              <div class="col-6"><label>Cidade</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_city" maxlength="100"></div>
-              <div class="col-6"><label>Referência</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_reference" maxlength="180"></div>
+          <div class="mb-3">
+            <label>Seu nome</label>
+            <input type="text" class="form-control" x-model="checkout.customer_name" maxlength="150" placeholder="Ex: João Silva">
+          </div>
+
+          <div class="mb-3">
+            <label>WhatsApp / telefone</label>
+            <input type="text" class="form-control" x-model="checkout.customer_phone" maxlength="20" placeholder="Ex: 67999998888">
+          </div>
+
+          <div class="mb-3">
+            <label>Forma de entrega</label>
+            <div class="d-flex gap-2">
+              <template x-if="tenant.pickup_enabled">
+                <button type="button" class="btn flex-fill" :class="checkout.delivery_type === 'pickup' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.delivery_type = 'pickup'">Retirar</button>
+              </template>
+              <template x-if="tenant.delivery_enabled">
+                <button type="button" class="btn flex-fill" :class="checkout.delivery_type === 'delivery' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.delivery_type = 'delivery'">Entrega</button>
+              </template>
             </div>
-            <template x-if="tenant.delivery_fee_cents > 0"><p class="small mt-2 mb-0" style="color: var(--text-dim);">Taxa de entrega: R$ <span x-text="formatCents(tenant.delivery_fee_cents)"></span></p></template>
-            <template x-if="tenant.free_delivery_above_cents > 0"><p class="small mt-1 mb-0" style="color: var(--text-dim);">Entrega grátis acima de R$ <span x-text="formatCents(tenant.free_delivery_above_cents)"></span></p></template>
           </div>
-        </template>
 
-        <div class="mb-3">
-          <label>Pagamento</label>
-          <div class="d-flex gap-2 flex-wrap">
-            <button type="button" class="btn btn-sm" :class="checkout.payment_method==='pix' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='pix'">Pix</button>
-            <button type="button" class="btn btn-sm" :class="checkout.payment_method==='card' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='card'">Cartão</button>
-            <button type="button" class="btn btn-sm" :class="checkout.payment_method==='cash' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='cash'">Dinheiro</button>
-            <button type="button" class="btn btn-sm" :class="checkout.payment_method==='other' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='other'">Outro</button>
+          <template x-if="checkout.delivery_type === 'delivery'">
+            <div class="p-3 mb-3 rounded" style="background: var(--surface); border: 1px solid var(--line);">
+              <p class="small mb-2" style="color: var(--text-dim);">Informe rua, número e bairro (complemento e cidade opcionais).</p>
+              <div class="row g-2">
+                <div class="col-8"><label>Rua</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_street" maxlength="180"></div>
+                <div class="col-4"><label>Número</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_number" maxlength="20"></div>
+                <div class="col-6"><label>Bairro</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_neighborhood" maxlength="100"></div>
+                <div class="col-6"><label>Complemento</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_complement" maxlength="120"></div>
+                <div class="col-6"><label>Cidade</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_city" maxlength="100"></div>
+                <div class="col-6"><label>Referência</label><input type="text" class="form-control form-control-sm" x-model="checkout.address_reference" maxlength="180"></div>
+              </div>
+              <template x-if="tenant.delivery_fee_cents > 0"><p class="small mt-2 mb-0" style="color: var(--text-dim);">Taxa de entrega: R$ <span x-text="formatCents(tenant.delivery_fee_cents)"></span></p></template>
+              <template x-if="tenant.free_delivery_above_cents > 0"><p class="small mt-1 mb-0" style="color: var(--text-dim);">Entrega grátis acima de R$ <span x-text="formatCents(tenant.free_delivery_above_cents)"></span></p></template>
+            </div>
+          </template>
+
+          <div class="mb-3">
+            <label>Pagamento</label>
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="button" class="btn btn-sm" :class="checkout.payment_method==='pix' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='pix'">Pix</button>
+              <button type="button" class="btn btn-sm" :class="checkout.payment_method==='card' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='card'">Cartão</button>
+              <button type="button" class="btn btn-sm" :class="checkout.payment_method==='cash' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='cash'">Dinheiro</button>
+              <button type="button" class="btn btn-sm" :class="checkout.payment_method==='other' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='other'">Outro</button>
+            </div>
           </div>
-        </div>
 
-        <div class="mb-3">
-          <label>Observações (opcional)</label>
-          <textarea class="form-control" rows="2" x-model="checkout.notes" maxlength="1000" placeholder="Ex: sem cebola, campainha quebrada, interfone 42..."></textarea>
-        </div>
+          <div class="mb-3">
+            <label>Observações (opcional)</label>
+            <textarea class="form-control" rows="2" x-model="checkout.notes" maxlength="1000" placeholder="Ex: sem cebola, campainha quebrada, interfone 42..."></textarea>
+          </div>
 
-        <template x-if="tenant.min_order_cents > 0 && subtotalCents() < tenant.min_order_cents">
-          <div class="alert alert-warning py-2 small">Pedido mínimo: R$ <span x-text="formatCents(tenant.min_order_cents)"></span></div>
-        </template>
-      </div>
-      <div class="sheet-foot">
-        <button type="button" class="btn btn-ghost-menu flex-grow-1" @click="showCheckout = false; showCart = true;">Voltar</button>
-        <button type="button" class="btn btn-accent flex-grow-1" :disabled="submitting" @click="submitOrder()">
-          <span x-show="!submitting">Enviar pedido</span><span x-show="submitting">Enviando...</span>
-        </button>
+          <template x-if="tenant.min_order_cents > 0 && subtotalCents() < tenant.min_order_cents">
+            <div class="alert alert-warning py-2 small">Pedido mínimo: R$ <span x-text="formatCents(tenant.min_order_cents)"></span></div>
+          </template>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-menu" @click="backToCart()">Voltar</button>
+          <button type="button" class="btn btn-accent flex-grow-1" :disabled="submitting" @click="submitOrder()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.5.1-.2 0-.4 0-.5C10 8.7 9.5 7.4 9.3 7c-.2-.4-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-1 1-1 2.4s1 2.8 1.1 3c.1.2 2 3 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
+            <span x-show="!submitting">Enviar WhatsApp</span><span x-show="submitting">Enviando...</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Confirmação -->
-  <div class="sheet-overlay" x-show="confirmedOrder" x-cloak>
-    <div class="sheet" style="max-width: 380px;">
-      <div class="sheet-body text-center">
-        <div style="font-size: 2.5rem;">✅</div>
-        <h3 class="mt-2">Pedido #<span x-text="confirmedOrder && confirmedOrder.order_number"></span> registrado!</h3>
-        <p style="color: var(--text-dim);">Total: R$ <span x-text="confirmedOrder && formatCents(confirmedOrder.total_cents)"></span></p>
-        <p class="small" style="color: var(--text-dim);">Finalize enviando a mensagem pelo WhatsApp para a loja confirmar seu pedido.</p>
-        <a :href="confirmedOrder && confirmedOrder.whatsapp_url" target="_blank" class="btn btn-accent w-100 mb-2" x-show="confirmedOrder && confirmedOrder.whatsapp_url">Enviar via WhatsApp</a>
-        <button type="button" class="btn btn-ghost-menu w-100" @click="resetAfterOrder()">Fechar</button>
+  <!-- Confirmação (toast) -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+    <div class="toast align-items-center border-0" role="status" aria-live="polite" aria-atomic="true" id="orderToast" style="background: var(--herb); color: #12210a;">
+      <div class="d-flex">
+        <div class="toast-body">
+          <strong>Pedido #<span x-text="confirmedOrder && confirmedOrder.order_number"></span> enviado!</strong><br>
+          <span class="small">Total: R$ <span x-text="confirmedOrder && formatCents(confirmedOrder.total_cents)"></span> — confira o WhatsApp que abrimos para você confirmar com a loja.</span>
+          <div class="mt-2" x-show="confirmedOrder && confirmedOrder.whatsapp_url">
+            <a :href="confirmedOrder && confirmedOrder.whatsapp_url" target="_blank" class="link-dark small fw-bold">Abrir WhatsApp novamente</a>
+          </div>
+        </div>
+        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
       </div>
     </div>
   </div>
@@ -586,8 +607,7 @@ function menuApp() {
     cart: {},
     bannerIndex: 0,
     bannerTimer: null,
-    showCart: false,
-    showCheckout: false,
+    cartUiHidden: false, // esconde ícone/botão flutuante do carrinho enquanto qualquer overlay estiver aberto
     submitting: false,
     errorMessage: null,
     confirmedOrder: null,
@@ -622,6 +642,34 @@ function menuApp() {
         cat.products.forEach(p => { this.products[p.id] = p; this.products[p.id]._category_icon = cat.icon; });
       });
       this.startBannerTimer();
+
+      // Enquanto o carrinho, o modal de produto ou o checkout estiverem
+      // abertos, escondemos o ícone do carrinho e o botão flutuante
+      // (mesma lógica unificada do template original).
+      const cartOffcanvasEl = document.getElementById('cartOffcanvas');
+      cartOffcanvasEl.addEventListener('shown.bs.offcanvas', () => { this.cartUiHidden = true; });
+      cartOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => { this.cartUiHidden = false; });
+
+      const productModalEl = document.getElementById('productModal');
+      productModalEl.addEventListener('shown.bs.modal', () => { this.cartUiHidden = true; });
+      productModalEl.addEventListener('hidden.bs.modal', () => { this.cartUiHidden = false; this.selectedProduct = null; });
+
+      const checkoutModalEl = document.getElementById('checkoutModal');
+      checkoutModalEl.addEventListener('shown.bs.modal', () => { this.cartUiHidden = true; });
+      checkoutModalEl.addEventListener('hidden.bs.modal', () => { this.cartUiHidden = false; });
+    },
+
+    // --- Overlays (offcanvas do carrinho + modais de produto/checkout) ---
+    openCart() {
+      bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('cartOffcanvas')).show();
+    },
+    startCheckout() {
+      this.errorMessage = null;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('checkoutModal')).show();
+    },
+    backToCart() {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('checkoutModal')).hide();
+      this.openCart();
     },
 
     // --- Categorias / busca ---
@@ -666,8 +714,11 @@ function menuApp() {
       this.modalValidationError = null;
       this.modalSelections = {};
       (product.complement_groups || []).forEach(group => { this.modalSelections[group.id] = new Set(); });
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('productModal')).show();
     },
-    closeProductModal() { this.selectedProduct = null; },
+    closeProductModal() {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('productModal')).hide();
+    },
 
     isOptionSelected(group, option) {
       const set = this.modalSelections[group.id];
@@ -739,7 +790,7 @@ function menuApp() {
         };
       }
       this.closeProductModal();
-      this.showCart = true;
+      this.openCart();
     },
 
     // --- Carrinho ---
@@ -792,16 +843,24 @@ function menuApp() {
         });
         const data = await resp.json();
         if (!resp.ok) { this.errorMessage = data.error || 'Não foi possível enviar o pedido.'; this.submitting = false; return; }
+
         this.confirmedOrder = data;
-        this.showCheckout = false;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('checkoutModal')).hide();
+
+        // O pedido já está salvo no servidor (com número e preço
+        // conferido) — agora só falta o cliente confirmar pelo
+        // WhatsApp, exatamente como no template original.
+        if (data.whatsapp_url) window.open(data.whatsapp_url, '_blank');
+        bootstrap.Toast.getOrCreateInstance(document.getElementById('orderToast')).show();
+
+        this.cart = {};
+        this.checkout.notes = '';
       } catch (err) {
         this.errorMessage = 'Falha de conexão. Verifique sua internet e tente novamente.';
       } finally {
         this.submitting = false;
       }
     },
-
-    resetAfterOrder() { this.cart = {}; this.confirmedOrder = null; this.checkout.notes = ''; },
   };
 }
 </script>
