@@ -1,8 +1,7 @@
 """
 Testes de regressão para os bugs de "tela branca" e de robustez de
-produção corrigidos nesta atualização. Existem especificamente para que
-esses erros não voltem a acontecer silenciosamente em uma futura edição
-de template.
+produção. Existem especificamente para que esses erros não voltem a
+acontecer silenciosamente em uma futura edição de template.
 """
 
 import os

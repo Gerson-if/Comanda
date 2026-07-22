@@ -14,7 +14,7 @@ Uso:
     gateway = get_gateway()
     if gateway is None:
         # ASAAS_API_KEY não configurada — integração desligada,
-        # cobrança continua manual (fluxo já existente desde a Fase 5).
+        # cobrança continua manual.
         ...
     else:
         gateway.ensure_customer(tenant)
