@@ -1,9 +1,18 @@
 /* ==========================================================================
    Comanda — Design System
-   Duas variantes de tema, mesma estrutura de componentes:
-   - .theme-chili (padrão): marketing, autenticação e painel do lojista
-   - .theme-blue: painel do Super Administrador (deliberadamente azulado
-     para diferenciar visualmente de quem está logado como o quê)
+   .theme-chili (padrão): usado em todo o back-office — marketing,
+   autenticação, painel do lojista e painel do Super Admin. Os dois
+   painéis internos compartilham a mesma identidade visual da marca
+   (antes o Super Admin usava um tema azulado à parte; unificado a
+   pedido, para reforçar uma identidade única do produto).
+
+   A cor de destaque (--accent/--accent-dark) pode ser sobrescrita em
+   tempo de execução pelo Super Admin (Configurações → Aparência,
+   PlatformSettings.admin_theme_accent) — ver bloco <style> injetado em
+   layouts/admin_panel.html e layouts/lojista_panel.html.
+
+   .theme-blue permanece definida abaixo por compatibilidade, mas não é
+   mais aplicada por nenhum layout.
    ========================================================================== */
 
 :root, .theme-chili {

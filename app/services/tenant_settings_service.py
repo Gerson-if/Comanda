@@ -75,6 +75,27 @@ class TenantSettingsService:
         db.session.commit()
         return self.tenant
 
+    def update_appearance(self, *, accent_color=None, reset_to_default=False):
+        """
+        `theme_settings` é um JSON livre (pensado pra "cores, fontes
+        etc." desde que o campo foi criado) — por ora só guardamos a
+        cor de destaque escolhida pelo lojista para o cardápio público.
+        Usa merge em vez de sobrescrever o dict inteiro, para não perder
+        outras chaves que venham a existir aí no futuro.
+        """
+        from app.utils.colors import normalize_hex
+
+        settings = dict(self.tenant.theme_settings or {})
+        if reset_to_default:
+            settings.pop("accent", None)
+        elif accent_color:
+            normalized = normalize_hex(accent_color)
+            if normalized:
+                settings["accent"] = normalized
+        self.tenant.theme_settings = settings or None
+        db.session.commit()
+        return self.tenant
+
     def update_opening_hours(self, days: dict) -> None:
         """
         `days`: dict {chave_do_dia: {"closed": bool, "open": str, "close": str}}

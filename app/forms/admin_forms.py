@@ -3,6 +3,7 @@ from wtforms import BooleanField, DateField, DecimalField, IntegerField, SelectF
 from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional, ValidationError
 
 from app.models.platform_settings import ASAAS_ENVIRONMENT_CHOICES
+from app.utils.colors import normalize_hex
 from app.utils.validators import not_blank, phone_number
 
 
@@ -83,3 +84,22 @@ class AsaasSettingsForm(FlaskForm):
     def validate_webhook_token(self, field):
         if field.data and self.clear_webhook_token.data:
             raise ValidationError("Não dá pra definir um novo token e marcar \"remover\" ao mesmo tempo.")
+
+
+class AdminAppearanceForm(FlaskForm):
+    """Cor de destaque do painel administrativo (Super Admin + painel
+    do lojista compartilham o mesmo design system) — opcional, some
+    dono de plataforma pode querer trocar o vermelho-tijolo padrão pela
+    cor da própria marca."""
+
+    accent_color = StringField(
+        "Cor de destaque do painel",
+        validators=[Optional(), Length(max=7)],
+        render_kw={"type": "color"},
+    )
+    reset_to_default = BooleanField("Voltar para a cor padrão")
+    submit = SubmitField("Salvar aparência")
+
+    def validate_accent_color(self, field):
+        if field.data and not self.reset_to_default.data and not normalize_hex(field.data):
+            raise ValidationError("Cor inválida.")

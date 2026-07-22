@@ -55,3 +55,15 @@ class PlatformSettingsService:
         if gateway is None:
             raise PaymentGatewayError("Nenhuma chave de API configurada ainda.")
         gateway.ping()
+
+    def update_admin_appearance(self, *, accent_color=None, reset_to_default=False):
+        from app.utils.colors import normalize_hex
+
+        if reset_to_default:
+            self.settings.admin_theme_accent = None
+        elif accent_color:
+            normalized = normalize_hex(accent_color)
+            if normalized:
+                self.settings.admin_theme_accent = normalized
+        db.session.commit()
+        return self.settings

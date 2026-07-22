@@ -8,7 +8,7 @@
     --bg: #1B140F; --bg-soft: #221A13; --surface: #2B2016; --surface-2: #35281B;
     --line: rgba(244,234,217,0.09); --line-strong: rgba(244,234,217,0.18);
     --text: #F5EAD9; --text-dim: #C9B7A0; --text-faint: #8E7C68;
-    --accent: #E8A33D; --accent-dark: #C97F1F; --accent-soft: rgba(232,163,61,0.14);
+    --accent: {{ theme.accent }}; --accent-dark: {{ theme.accent_dark }}; --accent-soft: {{ theme.accent_soft }};
     --herb: #7FA05C; --herb-soft: rgba(127,160,92,0.16); --rust: #C1502E; --paper: #F4ECDD; --paper-line: #d9cbb0;
     --font-display: 'Fraunces', serif; --font-body: 'Plus Jakarta Sans', sans-serif; --font-mono: 'JetBrains Mono', monospace;
     --sidebar-w: 260px;
@@ -79,7 +79,13 @@
     padding: 14px 0; position: sticky; top: 0; z-index: 1030; transition: margin-left .3s cubic-bezier(.22,.9,.32,1);
   }
   .menu-topbar .container-fluid { display: flex; align-items: center; justify-content: space-between; padding-left: 1.25rem; padding-right: 1.25rem; }
-  .menu-topbar .hamburger { background: transparent; border: none; color: var(--text); font-size: 1.5rem; padding: 0 8px; cursor: pointer; }
+  .menu-topbar .hamburger {
+    background: transparent; border: none; color: var(--text-dim); width: 36px; height: 36px;
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background .2s, color .2s; flex-shrink: 0;
+  }
+  .menu-topbar .hamburger:hover { background: var(--surface); color: var(--accent); }
+  .menu-topbar .hamburger svg { width: 19px; height: 19px; }
   .menu-topbar .brand { display: flex; align-items: center; gap: 10px; }
   .menu-topbar .brand-mark {
     width: 36px; height: 36px; border-radius: 10px; overflow: hidden; flex-shrink: 0;
@@ -263,7 +269,9 @@
   <header class="menu-topbar">
     <div class="container-fluid">
       <div class="d-flex align-items-center gap-3">
-        <button class="hamburger" @click="sidebarOpen = !sidebarOpen" aria-label="Abrir menu">☰</button>
+        <button type="button" class="hamburger" @click="sidebarOpen = !sidebarOpen" aria-label="Abrir menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+        </button>
         <div class="brand">
           <div class="brand-mark">
             {% if tenant.logo_path %}<img src="{{ url_for('static', filename=tenant.logo_path) }}" alt="{{ tenant.name }}">{% else %}{{ tenant.name[:1]|upper }}{% endif %}

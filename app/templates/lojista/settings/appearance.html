@@ -1,0 +1,36 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}Configurações — Aparência{% endblock %}
+{% block page_title %}Configurações{% endblock %}
+
+{% block panel_content %}
+{% include "lojista/settings/_tabs.html" %}
+
+<div class="panel" style="max-width: 480px;">
+  <div class="panel-title"><i class="bi bi-palette"></i> Cor de destaque do cardápio</div>
+  <p class="upload-meta mb-3">
+    Essa é a cor usada nos botões, preços e destaques do seu cardápio público
+    (a página que o cliente vê ao escanear o QR Code ou abrir o link da loja).
+    Não afeta este painel de gestão.
+  </p>
+
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3 d-flex align-items-center gap-3">
+      {{ form.accent_color(class="form-control form-control-color", style="width: 70px; height: 46px; padding: 4px;") }}
+      <span class="text-muted-custom small">Escolha uma cor que combine com a identidade da sua loja.</span>
+    </div>
+    {% for error in form.accent_color.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+
+    <div class="form-check mb-4">
+      {{ form.reset_to_default(class="form-check-input") }}
+      {{ form.reset_to_default.label(class="form-check-label") }}
+    </div>
+
+    {{ form.submit(class="btn btn-chili") }}
+    <a href="{{ url_for('public.store_home', slug=tenant.slug) }}" target="_blank" class="btn btn-outline-secondary">
+      <i class="bi bi-box-arrow-up-right"></i> Ver cardápio
+    </a>
+  </form>
+</div>
+{% endblock %}

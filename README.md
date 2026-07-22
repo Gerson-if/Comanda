@@ -214,23 +214,30 @@ notificação com a fatura certa.
 
 ## Identidade visual
 
-Três identidades visuais deliberadamente distintas, todas
-compartilhando os mesmos componentes (`app/static/css/comanda.css`,
-classes utilitárias via `[data-bs-theme]`/CSS custom properties):
+Duas identidades visuais, cada uma customizável em tempo de execução
+(sem precisar editar CSS nem redeployar):
 
-- **`.theme-chili`** (vermelho-chili `#E54A36`) — marketing (landing,
-  login, cadastro, recuperação de senha) e todo o painel do lojista.
-- **`.theme-blue`** (azul-índigo `#4361EE`) — painel do Super
-  Administrador. A distinção de cor evita confundir em qual painel
-  você está logado, reaproveitando os mesmos componentes (`.panel`,
-  `.kpi-card`, `.status-badge`, `.sidebar`) só trocando as variáveis
-  CSS.
+- **`.theme-chili`** (vermelho-chili `#E54A36` por padrão) — marketing
+  (landing, login, cadastro, recuperação de senha), painel do lojista
+  **e** painel do Super Admin, todos compartilhando os mesmos
+  componentes (`app/static/css/comanda.css`: `.panel`, `.kpi-card`,
+  `.status-badge`, `.sidebar`). Os dois painéis internos usam a mesma
+  identidade de marca — o Super Admin pode trocar a cor de destaque em
+  **Configurações → Aparência** (`PlatformSettings.admin_theme_accent`),
+  o que atualiza o tema tanto do seu próprio painel quanto do painel de
+  todos os lojistas (é uma identidade de back-office compartilhada).
 - **Cardápio público** (`store_menu.html`) — paleta âmbar/terracota
-  própria (`#E8A33D`), tipografia serifada (Fraunces), pensada para
-  parecer um cardápio de restaurante de verdade.
+  própria (`#E8A33D` por padrão), tipografia serifada (Fraunces),
+  pensada para parecer um cardápio de restaurante de verdade. Cada
+  lojista escolhe sua própria cor de destaque em **Configurações →
+  Aparência** no painel dele (`Tenant.theme_settings["accent"]`) — essa
+  cor é só do cardápio daquela loja, independente da cor do painel
+  administrativo.
 
 Tipografia: Archivo Black, Inter e JetBrains Mono para o tema
-"Comanda"; Fraunces + Plus Jakarta Sans para o cardápio público.
+"Comanda"; Fraunces + Plus Jakarta Sans para o cardápio público. Todas
+auto-hospedadas (`app/static/vendor/fonts/`), sem depender do Google
+Fonts em tempo de execução.
 
 `app/templates/layouts/lojista_panel.html` e `admin_panel.html`
 implementam a mesma casca (sidebar retrátil, colapsável em desktop,

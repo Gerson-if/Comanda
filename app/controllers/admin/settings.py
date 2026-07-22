@@ -1,6 +1,6 @@
 from flask import flash, redirect, render_template, url_for
 
-from app.forms.admin_forms import AsaasSettingsForm
+from app.forms.admin_forms import AdminAppearanceForm, AsaasSettingsForm
 from app.services.payment_gateway.base import PaymentGatewayError
 from app.services.platform_settings_service import PlatformSettingsService
 from app.utils.decorators import super_admin_required
@@ -71,3 +71,23 @@ def settings_asaas_test():
     else:
         flash("Conexão com o Asaas funcionando — a chave de API é válida.", "success")
     return redirect(url_for("admin.settings_asaas"))
+
+
+@admin_bp.route("/configuracoes/aparencia", methods=["GET", "POST"])
+@super_admin_required
+def settings_appearance():
+    service = PlatformSettingsService()
+    settings = service.settings
+    form = AdminAppearanceForm()
+
+    if not form.is_submitted():
+        form.accent_color.data = settings.admin_theme_accent or "#E54A36"
+
+    if form.validate_on_submit():
+        service.update_admin_appearance(
+            accent_color=form.accent_color.data, reset_to_default=form.reset_to_default.data,
+        )
+        flash("Aparência do painel atualizada.", "success")
+        return redirect(url_for("admin.settings_appearance"))
+
+    return render_template("admin/settings/appearance.html", form=form, settings=settings)

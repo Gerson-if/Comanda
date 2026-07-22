@@ -139,7 +139,24 @@ def _register_context_processors(app: Flask) -> None:
     def inject_globals():
         from app.utils.tenant_context import get_current_tenant
 
-        return {"current_tenant": get_current_tenant()}
+        return {"current_tenant": get_current_tenant(), "platform_settings": _get_platform_settings_safely()}
+
+
+def _get_platform_settings_safely():
+    """
+    Usado só para a cor de destaque customizável do painel
+    administrativo (ver layouts/admin_panel.html e lojista_panel.html).
+    Envolvido em try/except porque este context processor roda em TODA
+    requisição, inclusive antes de `platform_settings` existir no banco
+    (instalação nova, migração pendente) — nesse caso o painel
+    simplesmente usa a cor padrão do design system, sem quebrar a página.
+    """
+    try:
+        from app.models.platform_settings import PlatformSettings
+
+        return PlatformSettings.get_or_create()
+    except Exception:
+        return None
 
 
 def _register_cli_commands(app: Flask) -> None:

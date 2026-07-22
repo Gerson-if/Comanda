@@ -1,5 +1,11 @@
 {% extends "base.html" %}
-{% block body_class %}theme-blue{% endblock %}
+{% block body_class %}theme-chili{% endblock %}
+
+{% block extra_head %}
+{% if platform_settings and platform_settings.admin_theme_css_vars %}
+<style>:root, .theme-chili { --accent: {{ platform_settings.admin_theme_css_vars.accent }}; --accent-dark: {{ platform_settings.admin_theme_css_vars.accent_dark }}; }</style>
+{% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="app-shell" x-data="{ sidebarOpen: false, collapsed: false }">
@@ -24,8 +30,11 @@
       <a href="{{ url_for('admin.plans_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.plans') }}">
         <i class="bi bi-sliders"></i><span class="nav-label">Planos &amp; Limites</span>
       </a>
-      <a href="{{ url_for('admin.settings_asaas') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.settings') }}">
+      <a href="{{ url_for('admin.settings_asaas') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.settings_asaas') }}">
         <i class="bi bi-credit-card"></i><span class="nav-label">Cobrança (Asaas)</span>
+      </a>
+      <a href="{{ url_for('admin.settings_appearance') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.settings_appearance' }}">
+        <i class="bi bi-palette"></i><span class="nav-label">Aparência</span>
       </a>
     </nav>
 

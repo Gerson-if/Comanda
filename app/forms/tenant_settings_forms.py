@@ -5,6 +5,7 @@ from wtforms import Form as NoCsrfForm
 from wtforms.validators import DataRequired, Length, Optional, NumberRange, Regexp, ValidationError
 
 from app.models.tenant import WEEKDAY_KEYS, WEEKDAY_LABELS
+from app.utils.colors import normalize_hex
 from app.utils.validators import not_blank, phone_number, slug_format
 
 # HH:MM, 24 horas (aceita "9:00" ou "09:00")
@@ -49,6 +50,20 @@ class CheckoutSettingsForm(FlaskForm):
         # isso o checkout público fica sem nenhuma opção selecionável.
         if not any([self.accept_pix.data, self.accept_card.data, self.accept_cash.data, field.data]):
             raise ValidationError("Marque pelo menos uma forma de pagamento.")
+
+
+class AppearanceSettingsForm(FlaskForm):
+    accent_color = StringField(
+        "Cor de destaque do cardápio",
+        validators=[Optional(), Length(max=7)],
+        render_kw={"type": "color"},
+    )
+    reset_to_default = BooleanField("Voltar para a cor padrão (âmbar)")
+    submit = SubmitField("Salvar aparência")
+
+    def validate_accent_color(self, field):
+        if field.data and not self.reset_to_default.data and not normalize_hex(field.data):
+            raise ValidationError("Cor inválida.")
 
 
 class DayHoursForm(NoCsrfForm):

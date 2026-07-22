@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block body_class %}theme-chili{% endblock %}
 
+{% block extra_head %}
+{% if platform_settings and platform_settings.admin_theme_css_vars %}
+<style>:root, .theme-chili { --accent: {{ platform_settings.admin_theme_css_vars.accent }}; --accent-dark: {{ platform_settings.admin_theme_css_vars.accent_dark }}; }</style>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <div class="app-shell" x-data="{ sidebarOpen: false, collapsed: false }">
   <div class="sidebar-backdrop" :class="{show: sidebarOpen}" @click="sidebarOpen = false"></div>

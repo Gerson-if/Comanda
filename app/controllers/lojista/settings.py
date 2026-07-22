@@ -1,7 +1,7 @@
 from flask import flash, redirect, render_template, url_for, Response
 
 from app.forms.tenant_settings_forms import (
-    CheckoutSettingsForm, MenuSettingsForm, OpeningHoursForm, StoreInfoForm,
+    AppearanceSettingsForm, CheckoutSettingsForm, MenuSettingsForm, OpeningHoursForm, StoreInfoForm,
 )
 from app.services.admin_billing_service import AdminBillingService
 from app.services.tenant_settings_service import TenantSettingsError, TenantSettingsService
@@ -142,6 +142,24 @@ def settings_checkout():
         form.accept_other.data = tenant.accept_other
 
     return render_template("lojista/settings/checkout.html", form=form, tenant=tenant)
+
+
+@lojista_bp.route("/configuracoes/aparencia", methods=["GET", "POST"])
+@lojista_required
+def settings_appearance():
+    tenant = get_current_tenant()
+    form = AppearanceSettingsForm()
+    service = TenantSettingsService(tenant)
+
+    if form.validate_on_submit():
+        service.update_appearance(accent_color=form.accent_color.data, reset_to_default=form.reset_to_default.data)
+        flash("Aparência do cardápio atualizada.", "success")
+        return redirect(url_for("lojista.settings_appearance"))
+
+    if not form.is_submitted():
+        form.accent_color.data = (tenant.theme_settings or {}).get("accent") or "#E8A33D"
+
+    return render_template("lojista/settings/appearance.html", form=form, tenant=tenant)
 
 
 @lojista_bp.route("/configuracoes/assinatura")

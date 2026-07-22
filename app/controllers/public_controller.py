@@ -82,7 +82,14 @@ def _build_menu_data(tenant):
     # Produtos sem categoria (category_id NULL) não pertencem a nenhum
     # Category.products acima — sem isso, ficariam cadastrados mas
     # invisíveis para sempre no cardápio público. Agrupamos todos num
-    # bucket sintético "Outros" no fim do menu.
+    # bucket sintético no fim do menu.
+    #
+    # Importante: o nome desse bucket precisa ser diferente de "Outros"
+    # — esse é um nome comum para uma categoria de verdade que o lojista
+    # cria (ex: "Outros" com adicionais avulsos). Se os dois se
+    # chamassem igual, o cliente veria duas entradas idênticas na barra
+    # lateral (a categoria real "Outros" e este bucket sintético), o que
+    # parece um bug de duplicação mesmo não sendo.
     uncategorized = (
         Product.query.filter_by(tenant_id=tenant.id, category_id=None, is_active=True)
         .order_by(Product.display_order, Product.name)
@@ -92,7 +99,7 @@ def _build_menu_data(tenant):
         menu_categories.append(
             {
                 "id": "uncategorized",
-                "name": "Outros",
+                "name": "Sem categoria",
                 "icon": "other",
                 "products": [_serialize_product(product) for product in uncategorized],
             }
@@ -150,8 +157,11 @@ def store_home(slug):
         for banner in banners
     ]
 
+    default_theme = {"accent": "#E8A33D", "accent_dark": "#C97F1F", "accent_soft": "rgba(232,163,61,0.14)"}
+    theme = tenant.public_theme_css_vars or default_theme
+
     return render_template(
-        "public/store_menu.html", tenant=tenant, menu_data=menu_data, banners=banners_data,
+        "public/store_menu.html", tenant=tenant, menu_data=menu_data, banners=banners_data, theme=theme,
     )
 
 

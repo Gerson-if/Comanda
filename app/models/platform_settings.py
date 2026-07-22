@@ -34,6 +34,11 @@ class PlatformSettings(db.Model, TimestampMixin):
     asaas_environment = Column(String(20), nullable=False, default="sandbox", server_default="sandbox")
     asaas_webhook_token = Column(String(255), nullable=True)
 
+    # Cor de destaque (accent) do painel administrativo (Super Admin +
+    # lojista compartilham o mesmo design system "chili"). Se vazio, usa
+    # o vermelho-tijolo padrão da marca — nunca fica sem cor definida.
+    admin_theme_accent = Column(String(7), nullable=True)
+
     @classmethod
     def get_or_create(cls) -> "PlatformSettings":
         settings = db.session.get(cls, 1)
@@ -50,6 +55,20 @@ class PlatformSettings(db.Model, TimestampMixin):
     @property
     def asaas_webhook_configured(self) -> bool:
         return bool(self.asaas_webhook_token)
+
+    @property
+    def admin_theme_css_vars(self) -> dict | None:
+        """Variáveis CSS derivadas da cor de destaque escolhida, prontas
+        para injetar num <style> — ou None se não houver customização
+        (nesse caso o painel usa a cor padrão definida em comanda.css).
+        comanda.css deriva os tons mais claros com color-mix(--accent)
+        na hora, então só --accent/--accent-dark precisam ser
+        sobrescritos para todo o resto do design system acompanhar."""
+        if not self.admin_theme_accent:
+            return None
+        from app.utils.colors import darken_hex
+
+        return {"accent": self.admin_theme_accent, "accent_dark": darken_hex(self.admin_theme_accent)}
 
     def __repr__(self):
         return f"<PlatformSettings asaas_configured={self.asaas_configured}>"

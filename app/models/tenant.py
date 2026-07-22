@@ -172,6 +172,29 @@ class Tenant(db.Model, TimestampMixin):
         return self.status in (TenantStatus.TRIAL, TenantStatus.ACTIVE)
 
     @property
+    def public_theme_css_vars(self) -> dict | None:
+        """
+        Variáveis CSS derivadas da cor de destaque escolhida pelo
+        lojista para o CARDÁPIO PÚBLICO (armazenada em
+        `theme_settings["accent"]`) — ou None se o lojista nunca
+        customizou, caso em que o cardápio usa o âmbar padrão do
+        template. Diferente do tema do painel administrativo
+        (PlatformSettings.admin_theme_css_vars): esta cor é a
+        identidade visual da LOJA para os clientes dela, não do painel
+        interno de gestão.
+        """
+        accent = (self.theme_settings or {}).get("accent")
+        if not accent:
+            return None
+        from app.utils.colors import darken_hex, hex_to_rgba_css
+
+        return {
+            "accent": accent,
+            "accent_dark": darken_hex(accent),
+            "accent_soft": hex_to_rgba_css(accent, 0.14),
+        }
+
+    @property
     def accepted_payment_methods(self) -> list:
         """
         Lista (na ordem de exibição do checkout) das formas de pagamento
