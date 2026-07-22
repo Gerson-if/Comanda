@@ -54,6 +54,13 @@
           {{ form.description(class="form-control", rows=4, maxlength=2000) }}
         </div>
 
+        <div class="mb-3">
+          {{ form.tag.label(class="form-label small fw-semibold") }}
+          {{ form.tag(class="form-control", maxlength=40, placeholder="Ex: Mais pedido, Novidade, Promoção") }}
+          <div class="form-text">Selo curto mostrado no card do produto no cardápio público. Deixe em branco para não mostrar nenhum.</div>
+          {% for error in form.tag.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+        </div>
+
         <div class="d-flex align-items-center gap-2 mb-4">
           {{ form.is_active() }}
           {{ form.is_active.label(class="small text-muted-custom") }}

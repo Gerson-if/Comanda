@@ -23,6 +23,10 @@ class ProductForm(FlaskForm):
         places=2,
         validators=[Optional(), NumberRange(min=0, message="Custo não pode ser negativo.")],
     )
+    tag = StringField(
+        "Selo do produto (opcional)",
+        validators=[Optional(), Length(max=40)],
+    )
     is_active = BooleanField("Produto ativo (visível no cardápio)", default=True)
     submit = SubmitField("Salvar produto")
 

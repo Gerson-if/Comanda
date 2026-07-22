@@ -26,7 +26,7 @@ def categories_create():
     if form.validate_on_submit():
         service = CategoryService(tenant)
         try:
-            service.create(name=form.name.data, is_active=form.is_active.data)
+            service.create(name=form.name.data, is_active=form.is_active.data, icon=form.icon.data)
         except CategoryLimitReachedError as exc:
             flash(str(exc), "warning")
         else:
@@ -46,7 +46,7 @@ def categories_edit(category_id):
     form = CategoryForm(obj=category)
 
     if form.validate_on_submit():
-        service.update(category, name=form.name.data, is_active=form.is_active.data)
+        service.update(category, name=form.name.data, is_active=form.is_active.data, icon=form.icon.data)
         flash("Categoria atualizada com sucesso.", "success")
         return redirect(url_for("lojista.categories_list"))
 

@@ -50,6 +50,7 @@ def products_create():
                 description=form.description.data,
                 price_reais=float(form.price.data),
                 cost_price_reais=float(form.cost_price.data) if form.cost_price.data is not None else None,
+                tag=form.tag.data,
                 category_id=form.category_id.data or None,
                 is_active=form.is_active.data,
             )
@@ -83,6 +84,7 @@ def products_edit(product_id):
             description=form.description.data,
             price_reais=float(form.price.data),
             cost_price_reais=float(form.cost_price.data) if form.cost_price.data is not None else None,
+            tag=form.tag.data,
             category_id=form.category_id.data or None,
             is_active=form.is_active.data,
         )

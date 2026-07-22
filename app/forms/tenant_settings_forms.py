@@ -1,9 +1,14 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField
-from wtforms import BooleanField, DecimalField, StringField, SubmitField
-from wtforms.validators import DataRequired, Length, Optional, NumberRange
+from wtforms import BooleanField, DecimalField, FormField, StringField, SubmitField
+from wtforms import Form as NoCsrfForm
+from wtforms.validators import DataRequired, Length, Optional, NumberRange, Regexp
 
+from app.models.tenant import WEEKDAY_KEYS, WEEKDAY_LABELS
 from app.utils.validators import not_blank, phone_number, slug_format
+
+# HH:MM, 24 horas (aceita "9:00" ou "09:00")
+_TIME_FORMAT = Regexp(r"^([01]?\d|2[0-3]):[0-5]\d$", message="Use o formato HH:MM (ex: 18:30).")
 
 
 class StoreInfoForm(FlaskForm):
@@ -11,6 +16,12 @@ class StoreInfoForm(FlaskForm):
     whatsapp_number = StringField("WhatsApp (com DDI+DDD)", validators=[Optional(), Length(max=20), phone_number()])
     phone = StringField("Telefone (opcional)", validators=[Optional(), Length(max=20), phone_number()])
     logo = FileField("Logo da loja", validators=[FileAllowed(["png", "jpg", "jpeg", "webp"], message="Formato não suportado.")])
+
+    address_street = StringField("Rua", validators=[Optional(), Length(max=180)])
+    address_number = StringField("Número", validators=[Optional(), Length(max=20)])
+    address_neighborhood = StringField("Bairro", validators=[Optional(), Length(max=100)])
+    address_city = StringField("Cidade", validators=[Optional(), Length(max=100)])
+
     submit = SubmitField("Salvar dados da loja")
 
 
@@ -26,3 +37,34 @@ class CheckoutSettingsForm(FlaskForm):
     free_delivery_above = DecimalField("Entrega grátis acima de (R$) — opcional", places=2, validators=[Optional(), NumberRange(min=0)])
     min_order = DecimalField("Pedido mínimo (R$) — opcional", places=2, validators=[Optional(), NumberRange(min=0)])
     submit = SubmitField("Salvar")
+
+
+class DayHoursForm(NoCsrfForm):
+    """Subformulário de um único dia da semana (sem CSRF próprio — é
+    aninhado dentro de OpeningHoursForm via FormField)."""
+
+    closed = BooleanField("Fechado o dia todo")
+    open = StringField("Abre", validators=[Optional(), _TIME_FORMAT])
+    close = StringField("Fecha", validators=[Optional(), _TIME_FORMAT])
+
+
+class OpeningHoursForm(FlaskForm):
+    """
+    Um FormField por dia da semana (mon..sun). Renderizado no template
+    iterando `WEEKDAY_KEYS` e acessando `form[key]` — evita repetir 7
+    blocos de campo manualmente.
+    """
+
+    mon = FormField(DayHoursForm, label=WEEKDAY_LABELS["mon"])
+    tue = FormField(DayHoursForm, label=WEEKDAY_LABELS["tue"])
+    wed = FormField(DayHoursForm, label=WEEKDAY_LABELS["wed"])
+    thu = FormField(DayHoursForm, label=WEEKDAY_LABELS["thu"])
+    fri = FormField(DayHoursForm, label=WEEKDAY_LABELS["fri"])
+    sat = FormField(DayHoursForm, label=WEEKDAY_LABELS["sat"])
+    sun = FormField(DayHoursForm, label=WEEKDAY_LABELS["sun"])
+    submit = SubmitField("Salvar horário de funcionamento")
+
+    def days(self):
+        """Itera (chave, subform) na ordem de WEEKDAY_KEYS, para o template."""
+        for key in WEEKDAY_KEYS:
+            yield key, getattr(self, key)

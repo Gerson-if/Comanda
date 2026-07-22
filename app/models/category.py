@@ -4,6 +4,19 @@ from sqlalchemy.orm import relationship
 from app.extensions import db
 from app.models.base import TenantScopedMixin, TimestampMixin
 
+# Ícones disponíveis para uma categoria no cardápio público (ver
+# iconMap em app/static/js/store_menu.js). "other" é o padrão/fallback
+# para categorias que não se encaixam nos ícones temáticos.
+CATEGORY_ICON_CHOICES = [
+    ("other", "Outro"),
+    ("burger", "Lanches"),
+    ("pizza", "Pizzas"),
+    ("drink", "Bebidas"),
+    ("dessert", "Sobremesas"),
+    ("combo", "Combos"),
+]
+CATEGORY_ICON_KEYS = [key for key, _ in CATEGORY_ICON_CHOICES]
+
 
 class Category(db.Model, TenantScopedMixin, TimestampMixin):
     __tablename__ = "categories"
@@ -11,6 +24,7 @@ class Category(db.Model, TenantScopedMixin, TimestampMixin):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
     slug = Column(String(120), nullable=False)
+    icon = Column(String(20), nullable=False, default="other", server_default="other")
     display_order = Column(Integer, nullable=False, default=0)
     is_active = Column(Boolean, nullable=False, default=True)
 
@@ -20,6 +34,9 @@ class Category(db.Model, TenantScopedMixin, TimestampMixin):
     __table_args__ = (
         # O slug só precisa ser único DENTRO da mesma loja, não globalmente.
         UniqueConstraint("tenant_id", "slug", name="uq_category_tenant_slug"),
+        # `icon` não tem CHECK CONSTRAINT no banco — a validação do valor
+        # (deve ser uma das CATEGORY_ICON_KEYS) é feita no formulário
+        # (CategoryForm), que já restringe a um SelectField fechado.
     )
 
     def __repr__(self):

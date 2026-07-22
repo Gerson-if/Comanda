@@ -1,0 +1,43 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}Configurações — Horário{% endblock %}
+{% block page_title %}Configurações{% endblock %}
+
+{% block panel_content %}
+{% include "lojista/settings/_tabs.html" %}
+
+<div class="panel" style="max-width: 620px;">
+  <div class="panel-title"><i class="bi bi-clock"></i> Horário de funcionamento</div>
+  <p class="small text-muted-custom mb-4">
+    Usado para mostrar "Aberto agora" ou "Fechado agora" no topo do cardápio público.
+    Marque "Fechado o dia todo" para os dias sem funcionamento.
+  </p>
+
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    {% for key, subform in form.days() %}
+    <div class="row g-2 align-items-center mb-2 pb-2" style="border-bottom: 1px solid var(--card-border);">
+      <div class="col-3 col-md-2 small fw-semibold">{{ subform.label.text }}</div>
+      <div class="col-9 col-md-3">
+        <div class="d-flex align-items-center gap-2">
+          {{ subform.closed(**{"class": "form-check-input", "style": "margin-top:0;"}) }}
+          <label class="small text-muted-custom m-0">Fechado</label>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        {{ subform.open(class="form-control form-control-sm", placeholder="Abre (HH:MM)") }}
+        {% for error in subform.open.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="col-6 col-md-3">
+        {{ subform.close(class="form-control form-control-sm", placeholder="Fecha (HH:MM)") }}
+        {% for error in subform.close.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="mt-4">
+      {{ form.submit(class="btn btn-chili") }}
+    </div>
+  </form>
+</div>
+{% endblock %}

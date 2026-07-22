@@ -29,7 +29,7 @@ class ProductService:
         return product
 
     # --- CRUD ---
-    def create(self, *, name: str, description: str, price_reais: float, category_id: int | None, is_active: bool, cost_price_reais: float | None = None) -> Product:
+    def create(self, *, name: str, description: str, price_reais: float, category_id: int | None, is_active: bool, cost_price_reais: float | None = None, tag: str | None = None) -> Product:
         plan = self.tenant.plan
         if plan and plan.max_products is not None and self.repo.count() >= plan.max_products:
             raise ProductLimitReachedError(
@@ -50,6 +50,7 @@ class ProductService:
             description=(description or "").strip() or None,
             price_cents=round(price_reais * 100),
             cost_price_cents=round(cost_price_reais * 100) if cost_price_reais is not None else None,
+            tag=(tag or "").strip() or None,
             is_active=is_active,
             display_order=max_order + 1,
         )
@@ -57,10 +58,11 @@ class ProductService:
         db.session.commit()
         return product
 
-    def update(self, product: Product, *, name: str, description: str, price_reais: float, category_id: int | None, is_active: bool, cost_price_reais: float | None = None) -> Product:
+    def update(self, product: Product, *, name: str, description: str, price_reais: float, category_id: int | None, is_active: bool, cost_price_reais: float | None = None, tag: str | None = None) -> Product:
         if name.strip() != product.name:
             product.slug = generate_unique_slug(name, self.repo.get_by_slug, current_id=product.id)
         product.name = name.strip()
+        product.tag = (tag or "").strip() or None
         product.description = (description or "").strip() or None
         product.price_cents = round(price_reais * 100)
         product.cost_price_cents = round(cost_price_reais * 100) if cost_price_reais is not None else None

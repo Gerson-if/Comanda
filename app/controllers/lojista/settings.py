@@ -1,6 +1,8 @@
 from flask import flash, redirect, render_template, url_for, Response
 
-from app.forms.tenant_settings_forms import CheckoutSettingsForm, MenuSettingsForm, StoreInfoForm
+from app.forms.tenant_settings_forms import (
+    CheckoutSettingsForm, MenuSettingsForm, OpeningHoursForm, StoreInfoForm,
+)
 from app.services.admin_billing_service import AdminBillingService
 from app.services.tenant_settings_service import TenantSettingsError, TenantSettingsService
 from app.utils.decorators import lojista_required
@@ -22,6 +24,8 @@ def settings_store():
             service.update_store_info(
                 name=form.name.data, whatsapp_number=form.whatsapp_number.data,
                 phone=form.phone.data, logo_file_storage=form.logo.data,
+                address_street=form.address_street.data, address_number=form.address_number.data,
+                address_neighborhood=form.address_neighborhood.data, address_city=form.address_city.data,
             )
         except InvalidImageError as exc:
             flash(str(exc), "danger")
@@ -30,6 +34,32 @@ def settings_store():
             return redirect(url_for("lojista.settings_store"))
 
     return render_template("lojista/settings/store.html", form=form, tenant=tenant)
+
+
+@lojista_bp.route("/configuracoes/horario", methods=["GET", "POST"])
+@lojista_required
+def settings_hours():
+    tenant = get_current_tenant()
+    form = OpeningHoursForm()
+    service = TenantSettingsService(tenant)
+
+    if form.validate_on_submit():
+        days = {key: subform.data for key, subform in form.days()}
+        service.update_opening_hours(days)
+        flash("Horário de funcionamento atualizado.", "success")
+        return redirect(url_for("lojista.settings_hours"))
+
+    if not form.is_submitted():
+        saved = tenant.opening_hours or {}
+        for key, subform in form.days():
+            day = saved.get(key)
+            # Dia nunca configurado: começa marcado como "fechado" (o
+            # lojista precisa abrir explicitamente cada dia de operação).
+            subform.closed.data = True if not day else bool(day.get("closed"))
+            subform.open.data = (day or {}).get("open", "")
+            subform.close.data = (day or {}).get("close", "")
+
+    return render_template("lojista/settings/hours.html", form=form, tenant=tenant)
 
 
 @lojista_bp.route("/configuracoes/cardapio", methods=["GET", "POST"])

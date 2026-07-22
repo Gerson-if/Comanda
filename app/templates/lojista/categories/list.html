@@ -19,14 +19,17 @@
     <thead style="background: rgba(0,0,0,.15);">
       <tr class="text-muted-custom small text-uppercase">
         <th class="px-3 py-3">Nome</th>
+        <th class="px-3 py-3">Ícone</th>
         <th class="px-3 py-3">Status <span class="fw-normal">(clique p/ alternar)</span></th>
         <th class="px-3 py-3 text-end">Ações</th>
       </tr>
     </thead>
     <tbody>
+      {% set icon_labels = {"other": "Outro", "burger": "Lanches", "pizza": "Pizzas", "drink": "Bebidas", "dessert": "Sobremesas", "combo": "Combos"} %}
       {% for category in categories %}
       <tr style="border-top: 1px solid var(--card-border);">
         <td class="px-3 py-3">{{ category.name }}</td>
+        <td class="px-3 py-3 small text-muted-custom">{{ icon_labels.get(category.icon, "Outro") }}</td>
         <td class="px-3 py-3">{% include "lojista/categories/_status_badge.html" %}</td>
         <td class="px-3 py-3 text-end">
           <a href="{{ url_for('lojista.categories_edit', category_id=category.id) }}" class="btn btn-sm btn-outline-secondary">Editar</a>

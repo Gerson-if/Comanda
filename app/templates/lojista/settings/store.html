@@ -41,6 +41,27 @@
       {% for error in form.logo.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
     </div>
 
+    <hr class="my-4">
+    <div class="mb-2 small fw-semibold text-muted-custom">Endereço da loja (opcional — exibido no cardápio público)</div>
+    <div class="row g-2 mb-3">
+      <div class="col-8">
+        {{ form.address_street.label(class="form-label small fw-semibold") }}
+        {{ form.address_street(class="form-control", maxlength=180) }}
+      </div>
+      <div class="col-4">
+        {{ form.address_number.label(class="form-label small fw-semibold") }}
+        {{ form.address_number(class="form-control", maxlength=20) }}
+      </div>
+      <div class="col-6">
+        {{ form.address_neighborhood.label(class="form-label small fw-semibold") }}
+        {{ form.address_neighborhood(class="form-control", maxlength=100) }}
+      </div>
+      <div class="col-6">
+        {{ form.address_city.label(class="form-label small fw-semibold") }}
+        {{ form.address_city(class="form-control", maxlength=100) }}
+      </div>
+    </div>
+
     {{ form.submit(class="btn btn-chili") }}
   </form>
 </div>

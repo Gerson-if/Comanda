@@ -41,6 +41,10 @@ class Product(db.Model, TenantScopedMixin, TimestampMixin):
     price_cents = Column(Integer, nullable=False)
     cost_price_cents = Column(Integer, nullable=True)  # preço de custo, opcional — usado para calcular margem real
 
+    # Selo curto opcional mostrado no card do produto no cardápio público
+    # (ex: "Mais pedido", "Novidade", "Promoção"). Puramente decorativo.
+    tag = Column(String(40), nullable=True)
+
     is_active = Column(Boolean, nullable=False, default=True)
     display_order = Column(Integer, nullable=False, default=0)
 

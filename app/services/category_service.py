@@ -24,7 +24,7 @@ class CategoryService:
             abort(404)
         return category
 
-    def create(self, name: str, is_active: bool) -> Category:
+    def create(self, name: str, is_active: bool, icon: str = "other") -> Category:
         plan = self.tenant.plan
         if plan and plan.max_categories is not None and self.repo.count() >= plan.max_categories:
             raise CategoryLimitReachedError(
@@ -41,6 +41,7 @@ class CategoryService:
             tenant_id=self.tenant.id,
             name=name.strip(),
             slug=slug,
+            icon=icon or "other",
             is_active=is_active,
             display_order=max_order + 1,
         )
@@ -48,10 +49,11 @@ class CategoryService:
         db.session.commit()
         return category
 
-    def update(self, category: Category, name: str, is_active: bool) -> Category:
+    def update(self, category: Category, name: str, is_active: bool, icon: str = "other") -> Category:
         if name.strip() != category.name:
             category.slug = generate_unique_slug(name, self.repo.get_by_slug, current_id=category.id)
         category.name = name.strip()
+        category.icon = icon or "other"
         category.is_active = is_active
         db.session.commit()
         return category

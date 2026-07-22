@@ -5,6 +5,7 @@ gerencia QUALQUER tenant — este serviço só é chamado com o tenant da
 sessão atual, nunca com um tenant_id vindo de fora)."""
 
 from app.extensions import db
+from app.models.tenant import WEEKDAY_KEYS
 from app.repositories.tenant_repository import TenantRepository
 from app.utils.slugs import generate_unique_slug
 from app.utils.uploads import save_tenant_logo, delete_product_image_file, InvalidImageError
@@ -19,10 +20,18 @@ class TenantSettingsService:
         self.tenant = tenant
         self.repo = TenantRepository()
 
-    def update_store_info(self, *, name: str, whatsapp_number: str, phone: str, logo_file_storage=None):
+    def update_store_info(
+        self, *, name: str, whatsapp_number: str, phone: str, logo_file_storage=None,
+        address_street: str | None = None, address_number: str | None = None,
+        address_neighborhood: str | None = None, address_city: str | None = None,
+    ):
         self.tenant.name = name.strip()
         self.tenant.whatsapp_number = (whatsapp_number or "").strip() or None
         self.tenant.phone = (phone or "").strip() or None
+        self.tenant.address_street = (address_street or "").strip() or None
+        self.tenant.address_number = (address_number or "").strip() or None
+        self.tenant.address_neighborhood = (address_neighborhood or "").strip() or None
+        self.tenant.address_city = (address_city or "").strip() or None
 
         if logo_file_storage and logo_file_storage.filename:
             try:
@@ -56,5 +65,27 @@ class TenantSettingsService:
         self.tenant.delivery_fee_cents = round(delivery_fee_reais * 100) if delivery_fee_reais is not None else None
         self.tenant.free_delivery_above_cents = round(free_delivery_above_reais * 100) if free_delivery_above_reais is not None else None
         self.tenant.min_order_cents = round(min_order_reais * 100) if min_order_reais is not None else None
+        db.session.commit()
+        return self.tenant
+
+    def update_opening_hours(self, days: dict) -> None:
+        """
+        `days`: dict {chave_do_dia: {"closed": bool, "open": str, "close": str}}
+        vindo do OpeningHoursForm (um FormField por dia). Um dia só é
+        salvo como "aberto" se tiver abertura E fechamento válidos; caso
+        contrário é salvo como fechado — evita um horário incompleto
+        quebrar silenciosamente o cálculo de "aberto agora" no cardápio.
+        """
+        hours = {}
+        for key in WEEKDAY_KEYS:
+            day = days.get(key) or {}
+            open_time = (day.get("open") or "").strip()
+            close_time = (day.get("close") or "").strip()
+            if not day.get("closed") and open_time and close_time:
+                hours[key] = {"open": open_time, "close": close_time}
+            else:
+                hours[key] = {"closed": True}
+
+        self.tenant.opening_hours = hours
         db.session.commit()
         return self.tenant
