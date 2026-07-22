@@ -1,4 +1,4 @@
-# Comanda — Plataforma Multi-Tenant Completa (Fases 1-7)
+# Comanda — Plataforma Multi-Tenant Completa
 
 Stack frontend: **Bootstrap 5 + Bootstrap Icons** (identidade visual
 "Comanda") + **Alpine.js** (estado reativo: carrinho de compras,
@@ -13,19 +13,19 @@ Plataforma multi-tenant de cardápio digital: Super Administrador gerencia a
 plataforma e os planos; cada Lojista tem seu próprio cardápio, produtos,
 pedidos e clientes, totalmente isolados dos demais.
 
-**Fase 1 — Fundação**: estrutura Flask, modelagem completa do banco de
+**Fundação**: estrutura Flask, modelagem completa do banco de
 dados, migrations (Alembic), SQLite pronto para desenvolvimento.
 
-**Fase 2 — Autenticação & Multi-tenant**: login único por e-mail/senha
+**Autenticação & Multi-tenant**: login único por e-mail/senha
 para Super Admin e Lojista, contexto multi-tenant resolvido
 automaticamente, autorização por papel, bloqueio de contas
 suspensas/inadimplentes, CSRF e rate limiting.
 
-**Fase 3 — Painel do Lojista**: CRUD completo de categorias e produtos,
+**Painel do Lojista**: CRUD completo de categorias e produtos,
 upload/edição/remoção de imagens, limites de plano, link compartilhável
 do cardápio.
 
-**Fase 4 — Cardápio público** (esta atualização): página pública do
+**Cardápio público**: página pública do
 cardápio (Bootstrap + Alpine.js) com carrinho de compras, checkout que
 **grava o pedido no banco de dados** e gera automaticamente o link do
 **WhatsApp** com a mensagem do pedido pronta para envio — exatamente o
@@ -35,7 +35,7 @@ O painel do Super Admin (gestão de lojistas, planos, cobrança, bloqueio)
 e o painel de pedidos/vendas/financeiro do lojista entram nas próximas
 fases.
 
-## Identidade visual "Comanda" (Fase 7)
+## Identidade visual "Comanda"
 
 O frontend foi completamente reconstruído a partir de modelos visuais
 fornecidos pelo usuário (HTML/Bootstrap), substituindo o Tailwind CSS
@@ -66,7 +66,7 @@ colapsável em desktop, drawer em mobile) parametrizada por tema. Toda
 página de painel estende um desses layouts e só preenche
 `page_title`/`panel_content`.
 
-## Funcionalidades novas desta fase
+## Funcionalidades
 
 Esta atualização não foi só um reskin — implementei as lacunas de
 lógica que os modelos visuais pressupunham e que ainda não existiam:
@@ -161,7 +161,7 @@ tests/                          # pytest — auth, multi-tenant, CRUD, checkout,
 **Camadas**: Controller (rota) → Service (regra de negócio) → Repository
 (query) → Model (tabela). Controllers nunca acessam o banco diretamente.
 
-## Cardápio público e checkout (Fase 4)
+## Cardápio público e checkout
 
 - **Página do cardápio** (`/loja/<slug>`): categorias e produtos ativos,
   organizados em seções com navegação rápida, carrinho flutuante e
@@ -198,7 +198,7 @@ tests/                          # pytest — auth, multi-tenant, CRUD, checkout,
   navegador do cliente (o link já abre o WhatsApp com a mensagem
   pronta) — não depende de credenciais de API externa.
 
-## Pedidos, vendas e relatórios financeiros (Fase 6)
+## Pedidos, vendas e relatórios financeiros
 
 - **Gestão de pedidos** (`/painel/pedidos`): listagem paginada com filtro
   por status, e página de detalhe com itens, endereço de entrega (ou
@@ -231,7 +231,7 @@ tests/                          # pytest — auth, multi-tenant, CRUD, checkout,
   e atalhos diretos para Pedidos e Vendas.
 - **Navbar** ganhou os links de Pedidos e Vendas (lojista).
 
-## Painel do Super Admin (Fase 5)
+## Painel do Super Admin
 
 - **Gestão de lojistas**: criar (já com o usuário lojista/dono junto,
   pronto pra logar), listar com busca por nome/e-mail/slug e filtro por
@@ -279,7 +279,7 @@ requisição, por `app/utils/tenant_context.py`:
 `get_current_tenant()` é o único ponto de leitura do tenant atual usado
 pelo resto da aplicação.
 
-## Painel do Lojista (Fase 3)
+## Painel do Lojista
 
 - **Categorias**: criar, listar, editar, excluir. Excluir uma categoria
   não apaga os produtos dela — eles ficam "sem categoria".
