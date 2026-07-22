@@ -406,7 +406,11 @@ class TestStoreSettings:
         csrf = _csrf(resp.get_data(as_text=True))
         client.post(
             "/painel/configuracoes/checkout",
-            data={"delivery_fee": "12.50", "free_delivery_above": "80.00", "min_order": "20.00", "csrf_token": csrf},
+            data={
+                "delivery_fee": "12.50", "free_delivery_above": "80.00", "min_order": "20.00",
+                "accept_pix": "y", "accept_card": "y", "accept_cash": "y", "accept_other": "y",
+                "csrf_token": csrf,
+            },
         )
         with app.app_context():
             tenant = Tenant.query.filter_by(slug="braseiro-cia").first()

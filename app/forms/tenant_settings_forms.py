@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField
 from wtforms import BooleanField, DecimalField, FormField, StringField, SubmitField
 from wtforms import Form as NoCsrfForm
-from wtforms.validators import DataRequired, Length, Optional, NumberRange, Regexp
+from wtforms.validators import DataRequired, Length, Optional, NumberRange, Regexp, ValidationError
 
 from app.models.tenant import WEEKDAY_KEYS, WEEKDAY_LABELS
 from app.utils.validators import not_blank, phone_number, slug_format
@@ -36,7 +36,19 @@ class CheckoutSettingsForm(FlaskForm):
     delivery_fee = DecimalField("Taxa de entrega (R$)", places=2, validators=[Optional(), NumberRange(min=0)])
     free_delivery_above = DecimalField("Entrega grátis acima de (R$) — opcional", places=2, validators=[Optional(), NumberRange(min=0)])
     min_order = DecimalField("Pedido mínimo (R$) — opcional", places=2, validators=[Optional(), NumberRange(min=0)])
+
+    accept_pix = BooleanField("Pix", default=True)
+    accept_card = BooleanField("Cartão", default=True)
+    accept_cash = BooleanField("Dinheiro", default=True)
+    accept_other = BooleanField("Outro", default=True)
+
     submit = SubmitField("Salvar")
+
+    def validate_accept_other(self, field):
+        # Precisa sobrar pelo menos uma forma de pagamento marcada — sem
+        # isso o checkout público fica sem nenhuma opção selecionável.
+        if not any([self.accept_pix.data, self.accept_card.data, self.accept_cash.data, field.data]):
+            raise ValidationError("Marque pelo menos uma forma de pagamento.")
 
 
 class DayHoursForm(NoCsrfForm):

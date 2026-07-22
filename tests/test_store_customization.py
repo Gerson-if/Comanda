@@ -159,3 +159,55 @@ class TestOpeningHours:
             status = tenant.opening_status(now=now)
             assert status["open"] is False
             assert "18:00" in status["label"]
+
+
+class TestAcceptedPaymentMethods:
+    def test_all_methods_enabled_by_default(self, app):
+        with app.app_context():
+            tenant = Tenant.query.filter_by(slug="braseiro-cia").first()
+            values = [m["value"] for m in tenant.accepted_payment_methods]
+            assert values == ["pix", "card", "cash", "other"]
+
+    def test_disabling_methods_via_settings_form(self, app, client, login_as):
+        login_as(client, "lojista@braseiroecia.com.br", "lojista123")
+
+        resp = client.post(
+            "/painel/configuracoes/checkout",
+            data={"accept_pix": "y"},  # só Pix marcado — resto ausente = desmarcado
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+        with app.app_context():
+            tenant = Tenant.query.filter_by(slug="braseiro-cia").first()
+            assert tenant.accept_pix is True
+            assert tenant.accept_card is False
+            assert tenant.accept_cash is False
+            assert tenant.accept_other is False
+            assert tenant.accepted_payment_methods == [{"value": "pix", "label": "Pix"}]
+
+    def test_cannot_disable_every_payment_method(self, app, client, login_as):
+        login_as(client, "lojista@braseiroecia.com.br", "lojista123")
+
+        # Um payload realmente vazio faz o WTForms tratar os campos como
+        # "não enviados" (mantém o default) em vez de "desmarcados" — por
+        # isso incluímos um campo presente (mesmo que vazio) para simular
+        # um formulário de verdade submetido sem nenhum checkbox marcado.
+        resp = client.post("/painel/configuracoes/checkout", data={"min_order": ""})
+        assert resp.status_code == 200  # form re-renderizado com erro, não redireciona
+
+        with app.app_context():
+            tenant = Tenant.query.filter_by(slug="braseiro-cia").first()
+            # nada foi salvo — continua com os padrões (todos habilitados)
+            assert tenant.accept_pix is True
+            assert tenant.accept_card is True
+
+    def test_public_menu_only_shows_enabled_methods(self, app, client, login_as):
+        login_as(client, "lojista@braseiroecia.com.br", "lojista123")
+        client.post("/painel/configuracoes/checkout", data={"accept_pix": "y", "accept_cash": "y"})
+
+        resp = client.get("/loja/braseiro-cia")
+        html = resp.get_data(as_text=True)
+        assert '"value": "pix"' in html or '"value":"pix"' in html
+        assert '"value": "cash"' in html or '"value":"cash"' in html
+        assert '"value": "card"' not in html and '"value":"card"' not in html

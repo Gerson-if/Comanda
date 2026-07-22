@@ -27,6 +27,17 @@
       <div class="upload-meta">Deixe em branco para não exigir valor mínimo.</div>
     </div>
 
+    <hr style="border-color: var(--card-border, #333);">
+
+    <div class="panel-title mb-2"><i class="bi bi-credit-card-2-front"></i> Formas de pagamento aceitas</div>
+    <p class="upload-meta mb-3">Só aparecem para o cliente no cardápio público as opções marcadas aqui — evita que ele escolha uma forma de pagamento que sua loja não trabalha.</p>
+
+    <div class="form-check mb-2">{{ form.accept_pix(class="form-check-input") }}{{ form.accept_pix.label(class="form-check-label") }}</div>
+    <div class="form-check mb-2">{{ form.accept_card(class="form-check-input") }}{{ form.accept_card.label(class="form-check-label") }}</div>
+    <div class="form-check mb-2">{{ form.accept_cash(class="form-check-input") }}{{ form.accept_cash.label(class="form-check-label") }}</div>
+    <div class="form-check mb-3">{{ form.accept_other(class="form-check-input") }}{{ form.accept_other.label(class="form-check-label") }}</div>
+    {% for error in form.accept_other.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+
     {{ form.submit(class="btn btn-chili") }}
   </form>
 </div>

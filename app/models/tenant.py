@@ -118,6 +118,16 @@ class Tenant(db.Model, TimestampMixin):
     min_order_cents = Column(Integer, nullable=True)
     pickup_enabled = Column(Boolean, nullable=False, default=True)
 
+    # Formas de pagamento aceitas no checkout público — todas ligadas por
+    # padrão (compatível com o comportamento anterior, quando não havia
+    # essa configuração). Desligar uma aqui a esconde do cliente no
+    # cardápio, evitando que ele escolha "Cartão"/"Dinheiro" numa loja que
+    # só trabalha com Pix, por exemplo.
+    accept_pix = Column(Boolean, nullable=False, default=True, server_default="1")
+    accept_card = Column(Boolean, nullable=False, default=True, server_default="1")
+    accept_cash = Column(Boolean, nullable=False, default=True, server_default="1")
+    accept_other = Column(Boolean, nullable=False, default=True, server_default="1")
+
     # Aparência (tema do cardápio público)
     logo_path = Column(String(255), nullable=True)
     banner_path = Column(String(255), nullable=True)
@@ -160,6 +170,25 @@ class Tenant(db.Model, TimestampMixin):
     @property
     def is_active_account(self) -> bool:
         return self.status in (TenantStatus.TRIAL, TenantStatus.ACTIVE)
+
+    @property
+    def accepted_payment_methods(self) -> list:
+        """
+        Lista (na ordem de exibição do checkout) das formas de pagamento
+        que esta loja aceita, no formato usado pelo cardápio público.
+        Se o lojista desmarcar todas por engano, caímos de volta para
+        Pix — sempre precisa sobrar pelo menos uma opção selecionável no
+        checkout (o formulário de configurações também bloqueia isso,
+        mas este é um segundo cinto de segurança no lado público).
+        """
+        options = [
+            {"value": "pix", "label": "Pix", "enabled": self.accept_pix},
+            {"value": "card", "label": "Cartão", "enabled": self.accept_card},
+            {"value": "cash", "label": "Dinheiro", "enabled": self.accept_cash},
+            {"value": "other", "label": "Outro", "enabled": self.accept_other},
+        ]
+        enabled = [{"value": o["value"], "label": o["label"]} for o in options if o["enabled"]]
+        return enabled or [{"value": "pix", "label": "Pix"}]
 
     @property
     def has_opening_hours(self) -> bool:

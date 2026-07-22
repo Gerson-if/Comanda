@@ -61,10 +61,17 @@ class TenantSettingsService:
         db.session.commit()
         return self.tenant
 
-    def update_checkout_settings(self, *, delivery_fee_reais, free_delivery_above_reais, min_order_reais):
+    def update_checkout_settings(
+        self, *, delivery_fee_reais, free_delivery_above_reais, min_order_reais,
+        accept_pix=True, accept_card=True, accept_cash=True, accept_other=True,
+    ):
         self.tenant.delivery_fee_cents = round(delivery_fee_reais * 100) if delivery_fee_reais is not None else None
         self.tenant.free_delivery_above_cents = round(free_delivery_above_reais * 100) if free_delivery_above_reais is not None else None
         self.tenant.min_order_cents = round(min_order_reais * 100) if min_order_reais is not None else None
+        self.tenant.accept_pix = accept_pix
+        self.tenant.accept_card = accept_card
+        self.tenant.accept_cash = accept_cash
+        self.tenant.accept_other = accept_other
         db.session.commit()
         return self.tenant
 

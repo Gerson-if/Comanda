@@ -15,6 +15,13 @@
   }
   body.menu-body { background: var(--bg); color: var(--text); font-family: var(--font-body); padding-bottom: 90px; margin: 0; }
 
+  /* ===== GRAIN (textura sutil de fundo) ===== */
+  .menu-grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .4;
+    background-image: radial-gradient(rgba(244,234,217,0.035) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
   /* ===== SIDEBAR ===== */
   .menu-sidebar {
     position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
@@ -207,6 +214,8 @@
 {% block navbar %}{% endblock %}
 
 {% block content %}
+<div class="menu-grain"></div>
+
 <div x-data="menuApp()" x-init="init()">
 
   <aside class="menu-sidebar" :class="{ open: sidebarOpen }">
@@ -313,7 +322,7 @@
           <div class="product-grid">
             <template x-for="p in filteredProductsByCategory(cat.id)" :key="p.id">
               <div class="product-card" @click="openProductModal(p.id)">
-                <div class="media">
+                <div class="media" :style="!p.image_url ? ('background:' + categoryMediaBg(cat.icon)) : ''">
                   <template x-if="p.image_url"><img :src="p.image_url" :alt="p.name"></template>
                   <template x-if="!p.image_url"><span x-text="categoryEmoji(cat.icon)"></span></template>
                   <span class="tag" x-show="p.tag" x-text="p.tag"></span>
@@ -359,7 +368,7 @@
         <div class="modal-body">
           <template x-if="selectedProduct">
             <div>
-              <div class="product-modal-media">
+              <div class="product-modal-media" :style="!selectedProduct.image_url ? ('background:' + categoryMediaBg(selectedProductCategoryIcon())) : ''">
                 <template x-if="selectedProduct.image_url"><img :src="selectedProduct.image_url" :alt="selectedProduct.name"></template>
                 <template x-if="!selectedProduct.image_url"><span x-text="categoryEmoji(selectedProductCategoryIcon())"></span></template>
               </div>
@@ -544,10 +553,9 @@
           <div class="mb-3">
             <label>Pagamento</label>
             <div class="d-flex gap-2 flex-wrap">
-              <button type="button" class="btn btn-sm" :class="checkout.payment_method==='pix' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='pix'">Pix</button>
-              <button type="button" class="btn btn-sm" :class="checkout.payment_method==='card' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='card'">Cartão</button>
-              <button type="button" class="btn btn-sm" :class="checkout.payment_method==='cash' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='cash'">Dinheiro</button>
-              <button type="button" class="btn btn-sm" :class="checkout.payment_method==='other' ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method='other'">Outro</button>
+              <template x-for="method in tenant.accepted_payment_methods" :key="method.value">
+                <button type="button" class="btn btn-sm" :class="checkout.payment_method===method.value ? 'btn-accent' : 'btn-ghost-menu'" @click="checkout.payment_method=method.value" x-text="method.label"></button>
+              </template>
             </div>
           </div>
 
@@ -637,6 +645,8 @@ function menuApp() {
 
     init() {
       this.checkout.delivery_type = this.tenant.pickup_enabled ? 'pickup' : 'delivery';
+      const firstMethod = (this.tenant.accepted_payment_methods || [])[0];
+      if (firstMethod) this.checkout.payment_method = firstMethod.value;
       this.categories.forEach(cat => {
         cat.products.forEach(p => { this.products[p.id] = p; this.products[p.id]._category_icon = cat.icon; });
       });
@@ -699,6 +709,16 @@ function menuApp() {
       return this.displayedCategories.reduce((sum, cat) => sum + this.filteredProductsByCategory(cat.id).length, 0);
     },
     categoryEmoji(icon) { return this.emojiMap[icon] || this.emojiMap.other; },
+    categoryMediaBg(icon) {
+      const map = {
+        burger: 'radial-gradient(circle at 30% 20%, #3b2a18, #241a10)',
+        pizza: 'radial-gradient(circle at 30% 20%, #3a2416, #241a10)',
+        drink: 'radial-gradient(circle at 30% 20%, #16302c, #16201d)',
+        dessert: 'radial-gradient(circle at 30% 20%, #3a2130, #241a10)',
+        combo: 'radial-gradient(circle at 30% 20%, #33301a, #24230f)',
+      };
+      return map[icon] || 'var(--surface-2)';
+    },
     selectedProductCategoryIcon() { return this.selectedProduct ? this.selectedProduct._category_icon : 'other'; },
 
     // --- Modal de produto ---

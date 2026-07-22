@@ -126,6 +126,8 @@ def settings_checkout():
             delivery_fee_reais=float(form.delivery_fee.data) if form.delivery_fee.data is not None else None,
             free_delivery_above_reais=float(form.free_delivery_above.data) if form.free_delivery_above.data is not None else None,
             min_order_reais=float(form.min_order.data) if form.min_order.data is not None else None,
+            accept_pix=form.accept_pix.data, accept_card=form.accept_card.data,
+            accept_cash=form.accept_cash.data, accept_other=form.accept_other.data,
         )
         flash("Configurações de checkout atualizadas.", "success")
         return redirect(url_for("lojista.settings_checkout"))
@@ -134,6 +136,10 @@ def settings_checkout():
         form.delivery_fee.data = (tenant.delivery_fee_cents / 100) if tenant.delivery_fee_cents else None
         form.free_delivery_above.data = (tenant.free_delivery_above_cents / 100) if tenant.free_delivery_above_cents else None
         form.min_order.data = (tenant.min_order_cents / 100) if tenant.min_order_cents else None
+        form.accept_pix.data = tenant.accept_pix
+        form.accept_card.data = tenant.accept_card
+        form.accept_cash.data = tenant.accept_cash
+        form.accept_other.data = tenant.accept_other
 
     return render_template("lojista/settings/checkout.html", form=form, tenant=tenant)
 

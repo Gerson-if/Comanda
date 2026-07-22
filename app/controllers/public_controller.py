@@ -125,6 +125,7 @@ def _build_menu_data(tenant):
             "address_line": address_line,
             "service_line": service_line,
             "opening_status": tenant.opening_status(),
+            "accepted_payment_methods": tenant.accepted_payment_methods,
         },
         "categories": menu_categories,
     }
