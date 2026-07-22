@@ -170,23 +170,31 @@ quando o pagamento é confirmado.
 
 Como funciona:
 
-- **Desligado por padrão.** Sem `ASAAS_API_KEY` configurada, o fluxo
+- **Desligado por padrão.** Sem chave de API configurada, o fluxo
   manual de fatura continua como era.
-- **Como ligar**: defina `ASAAS_API_KEY` (painel do Asaas → Integrações
-  → API) e, para produção, `ASAAS_ENVIRONMENT=production` (o padrão é
-  `sandbox`).
+- **Como ligar**: o jeito recomendado é pelo próprio painel, em
+  **Super Admin → Cobrança (Asaas)** (`/admin/configuracoes/asaas`) —
+  cadastre a chave de API, escolha o ambiente (sandbox/produção) e
+  gere o token de webhook por lá, sem precisar mexer no servidor. A
+  tela também tem um botão "Testar conexão" para validar a chave antes
+  de contar com a integração, e avisa explicitamente quando a chave
+  está configurada mas o webhook não (situação que impede a liberação
+  automática do lojista). Também é possível configurar via variáveis
+  de ambiente (`ASAAS_API_KEY`, `ASAAS_ENVIRONMENT`,
+  `ASAAS_WEBHOOK_TOKEN`) — os valores do painel têm prioridade quando
+  ambos existem.
 - Com a chave configurada, cada fatura pendente na tela de detalhe do
   lojista (`/admin/lojistas/<id>`) ganha um botão "Gerar cobrança
   Asaas", que cria (ou reaproveita) um cliente no Asaas vinculado ao
   tenant e gera uma cobrança com Pix/boleto/cartão.
 - **Webhook de confirmação**: configure no painel do Asaas a URL
-  `https://SEU-DOMINIO/webhooks/asaas` com o token definido em
-  `ASAAS_WEBHOOK_TOKEN` (o mesmo valor nos dois lugares, para que
-  ninguém consiga forjar uma notificação de pagamento confirmado). Sem
-  `ASAAS_WEBHOOK_TOKEN` configurado, o endpoint recusa qualquer chamada
-  (503). Quando o Asaas confirma o pagamento, o webhook aciona a mesma
-  lógica de "marcar como paga" — a loja bloqueada por inadimplência é
-  liberada automaticamente.
+  `https://SEU-DOMINIO/webhooks/asaas` com o token gerado na tela de
+  configurações (ou definido em `ASAAS_WEBHOOK_TOKEN`), para que
+  ninguém consiga forjar uma notificação de pagamento confirmado. Sem
+  token configurado, o endpoint recusa qualquer chamada (503). Quando
+  o Asaas confirma o pagamento, o webhook aciona a mesma lógica de
+  "marcar como paga" — a loja bloqueada por inadimplência é liberada
+  automaticamente.
 
 Arquitetura da integração:
 

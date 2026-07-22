@@ -122,3 +122,10 @@ class AsaasGateway(PaymentGateway):
     def get_charge_status(self, charge_id: str) -> dict:
         data = self._request("GET", f"/payments/{charge_id}")
         return {"id": data.get("id"), "status": data.get("status")}
+
+    def ping(self) -> None:
+        # /myAccount é um endpoint leve de leitura só pra confirmar que
+        # a chave de API é aceita — não cria nem altera nada no Asaas.
+        # `_request` já levanta PaymentGatewayError em qualquer erro
+        # (chave inválida, ambiente errado, falha de rede, etc.).
+        self._request("GET", "/myAccount")

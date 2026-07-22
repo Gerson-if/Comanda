@@ -1,0 +1,116 @@
+{% extends "layouts/admin_panel.html" %}
+{% block title %}Cobrança (Asaas) — Comanda Admin{% endblock %}
+{% block page_title %}Cobrança (Asaas){% endblock %}
+
+{% block panel_content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="panel mb-4">
+      <div class="panel-title"><i class="bi bi-key"></i> Chave de API</div>
+
+      <div class="d-flex gap-2 mb-3">
+        {% if settings.asaas_configured %}
+        <span class="status-badge status-active">Chave configurada</span>
+        {% else %}
+        <span class="status-badge status-blocked">Sem chave configurada</span>
+        {% endif %}
+        <span class="text-muted-custom small align-self-center">Ambiente atual: <strong>{{ "Produção" if settings.asaas_environment == "production" else "Sandbox (testes)" }}</strong></span>
+      </div>
+
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+          {{ form.environment.label(class="form-label small fw-semibold") }}
+          {{ form.environment(class="form-select") }}
+          <p class="text-muted-custom small mt-1 mb-0">Use Sandbox para testar com uma chave de teste do Asaas antes de ir para produção.</p>
+        </div>
+
+        <div class="mb-3">
+          {{ form.api_key.label(class="form-label small fw-semibold") }}
+          {{ form.api_key(class="form-control", placeholder="$aact_...") }}
+          {% for error in form.api_key.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+          <div class="form-check mt-2">
+            {{ form.clear_api_key(class="form-check-input") }}
+            {{ form.clear_api_key.label(class="form-check-label small") }}
+          </div>
+        </div>
+
+        <hr style="border-color: var(--card-border);">
+
+        <div class="mb-3">
+          {{ form.webhook_token.label(class="form-label small fw-semibold") }}
+          {{ form.webhook_token(class="form-control", placeholder="deixe em branco para manter o atual") }}
+          {% for error in form.webhook_token.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+          <div class="form-check mt-2">
+            {{ form.clear_webhook_token(class="form-check-input") }}
+            {{ form.clear_webhook_token.label(class="form-check-label small") }}
+          </div>
+        </div>
+
+        {{ form.submit(class="btn btn-chili") }}
+      </form>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><i class="bi bi-arrow-repeat"></i> Ações rápidas</div>
+      <div class="d-flex flex-wrap gap-2">
+        <form method="POST" action="{{ url_for('admin.settings_asaas_generate_token') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Gerar token de webhook aleatório</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.settings_asaas_test') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-secondary" {{ "disabled" if not settings.asaas_configured }}>Testar conexão</button>
+        </form>
+      </div>
+      <p class="text-muted-custom small mt-3 mb-0">
+        "Testar conexão" chama o Asaas com a chave salva para confirmar que ela é válida,
+        sem criar nem alterar nada por lá — use antes de contar com a integração em produção.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="panel mb-4">
+      <div class="panel-title"><i class="bi bi-broadcast"></i> Webhook do Asaas</div>
+
+      {% if settings.asaas_webhook_configured %}
+      <span class="status-badge status-active mb-3 d-inline-block">Token configurado</span>
+      {% else %}
+      <div class="alert alert-warning py-2 small mb-3">
+        <i class="bi bi-exclamation-triangle"></i>
+        Sem um token de webhook, os pagamentos confirmados no Asaas não
+        liberam o lojista automaticamente — alguém precisa marcar cada
+        fatura como paga manualmente. Gere um token ao lado e cadastre a
+        URL abaixo no painel do Asaas.
+      </div>
+      {% endif %}
+
+      <p class="text-muted-custom small mb-1">URL para cadastrar no Asaas (Configurações → Integrações → Webhooks):</p>
+      <div class="input-group mb-2">
+        <input type="text" class="form-control form-control-sm" value="{{ webhook_url }}" readonly onclick="this.select()">
+      </div>
+      <p class="text-muted-custom small mb-0">
+        No painel do Asaas, cadastre o token de webhook gerado aqui como o
+        "Token de acesso" do webhook, para que o sistema confirme que a
+        notificação realmente veio do Asaas.
+      </p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><i class="bi bi-info-circle"></i> Como funciona</div>
+      <p class="text-muted-custom small mb-2">
+        Estas configurações substituem a necessidade de editar o arquivo
+        <code>.env</code> do servidor para habilitar a cobrança automática.
+        Elas ficam salvas no banco de dados da plataforma.
+      </p>
+      <p class="text-muted-custom small mb-0">
+        Se o servidor já tiver <code>ASAAS_API_KEY</code> definida nas
+        variáveis de ambiente, ela continua funcionando como
+        alternativa — mas o valor configurado aqui tem prioridade.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

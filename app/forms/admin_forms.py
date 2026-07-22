@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, DateField, DecimalField, IntegerField, SelectField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
+from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional, ValidationError
 
+from app.models.platform_settings import ASAAS_ENVIRONMENT_CHOICES
 from app.utils.validators import not_blank, phone_number
 
 
@@ -48,3 +49,37 @@ class InvoiceForm(FlaskForm):
     amount = DecimalField("Valor (R$)", places=2, validators=[DataRequired(), NumberRange(min=0.01)])
     due_date = DateField("Vencimento", validators=[DataRequired()])
     submit = SubmitField("Lançar fatura")
+
+
+class AsaasSettingsForm(FlaskForm):
+    """
+    Chave de API e token de webhook nunca são pré-preenchidos no GET
+    (só um indicador de "já configurado" é mostrado no template) — os
+    campos abaixo servem para DEFINIR um novo valor. Deixar em branco
+    mantém o valor atual sem alterá-lo; marcar a caixa "remover"
+    desativa a respectiva configuração.
+    """
+
+    environment = SelectField("Ambiente", choices=ASAAS_ENVIRONMENT_CHOICES)
+
+    api_key = StringField(
+        "Nova chave de API (deixe em branco para manter a atual)",
+        validators=[Optional(), Length(max=255)],
+    )
+    clear_api_key = BooleanField("Remover chave de API (desativa a integração)")
+
+    webhook_token = StringField(
+        "Novo token de webhook (deixe em branco para manter o atual)",
+        validators=[Optional(), Length(min=16, max=255, message="Use pelo menos 16 caracteres — prefira o botão \"Gerar token aleatório\".")],
+    )
+    clear_webhook_token = BooleanField("Remover token de webhook")
+
+    submit = SubmitField("Salvar configurações")
+
+    def validate_api_key(self, field):
+        if field.data and self.clear_api_key.data:
+            raise ValidationError("Não dá pra definir uma nova chave e marcar \"remover\" ao mesmo tempo.")
+
+    def validate_webhook_token(self, field):
+        if field.data and self.clear_webhook_token.data:
+            raise ValidationError("Não dá pra definir um novo token e marcar \"remover\" ao mesmo tempo.")

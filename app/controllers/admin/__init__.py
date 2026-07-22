@@ -12,3 +12,4 @@ from app.controllers.admin import dashboard  # noqa: E402,F401
 from app.controllers.admin import tenants  # noqa: E402,F401
 from app.controllers.admin import plans  # noqa: E402,F401
 from app.controllers.admin import billing  # noqa: E402,F401
+from app.controllers.admin import settings  # noqa: E402,F401

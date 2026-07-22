@@ -21,6 +21,7 @@ from app.models.order import (
 )
 from app.models.billing import Subscription, Invoice, SubscriptionStatus, InvoiceStatus
 from app.models.banner import Banner
+from app.models.platform_settings import PlatformSettings, ASAAS_ENVIRONMENT_CHOICES
 
 __all__ = [
     "Tenant",
@@ -46,4 +47,6 @@ __all__ = [
     "SubscriptionStatus",
     "InvoiceStatus",
     "Banner",
+    "PlatformSettings",
+    "ASAAS_ENVIRONMENT_CHOICES",
 ]

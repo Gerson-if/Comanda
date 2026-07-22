@@ -27,13 +27,23 @@ from app.services.payment_gateway.asaas_gateway import AsaasGateway
 
 
 def get_gateway():
-    """Retorna a instância do gateway configurado, ou None se nenhuma
-    integração de pagamento estiver habilitada (ASAAS_API_KEY vazia)."""
-    api_key = current_app.config.get("ASAAS_API_KEY")
+    """
+    Retorna a instância do gateway configurado, ou None se nenhuma
+    integração de pagamento estiver habilitada.
+
+    Fonte de verdade: a tela de configurações do Super Admin
+    (PlatformSettings, tabela `platform_settings`). Se o Super Admin
+    ainda não configurou nada por lá, cai de volta para as variáveis de
+    ambiente ASAAS_API_KEY/ASAAS_ENVIRONMENT (compatibilidade com
+    instalações que só usam .env) — isso permite migrar de env vars
+    para a tela sem quebrar quem já tinha configurado do jeito antigo.
+    """
+    from app.models.platform_settings import PlatformSettings
+
+    settings = PlatformSettings.get_or_create()
+    api_key = settings.asaas_api_key or current_app.config.get("ASAAS_API_KEY")
     if not api_key:
         return None
 
-    return AsaasGateway(
-        api_key=api_key,
-        environment=current_app.config.get("ASAAS_ENVIRONMENT", "sandbox"),
-    )
+    environment = settings.asaas_environment or current_app.config.get("ASAAS_ENVIRONMENT", "sandbox")
+    return AsaasGateway(api_key=api_key, environment=environment)

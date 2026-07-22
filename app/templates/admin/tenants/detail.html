@@ -33,10 +33,10 @@
       {% if not asaas_configured %}
       <div class="alert alert-secondary py-2 small mb-3">
         <i class="bi bi-info-circle"></i>
-        Cobrança automática via Asaas não está configurada. Defina
-        <code>ASAAS_API_KEY</code> nas variáveis de ambiente para gerar
-        boleto/Pix/cartão automaticamente por fatura — até lá, marque as
-        faturas como pagas manualmente.
+        Cobrança automática via Asaas não está configurada.
+        <a href="{{ url_for('admin.settings_asaas') }}" class="link-chili">Configure a chave de API</a>
+        para gerar boleto/Pix/cartão automaticamente por fatura — até lá,
+        marque as faturas como pagas manualmente.
       </div>
       {% endif %}
 

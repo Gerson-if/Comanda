@@ -31,3 +31,14 @@ class PaymentGateway(ABC):
     @abstractmethod
     def get_charge_status(self, charge_id: str) -> dict:
         """Consulta o status atual de uma cobrança no gateway."""
+
+    @abstractmethod
+    def ping(self) -> None:
+        """
+        Faz uma chamada leve e somente-leitura ao gateway só para
+        confirmar que as credenciais são válidas — usado pelo botão
+        "Testar conexão" da tela de configurações do Super Admin, para
+        detectar uma chave errada/expirada ANTES dela ser usada para
+        gerar uma cobrança real. Levanta PaymentGatewayError se a
+        credencial for inválida ou a chamada falhar.
+        """
