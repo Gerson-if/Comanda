@@ -1,0 +1,27 @@
+[Unit]
+Description=Comanda (Flask) - servidor de aplicação
+After=network.target __DB_SERVICE__
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+Group=__SERVICE_USER__
+WorkingDirectory=__APP_DIR__
+EnvironmentFile=__APP_DIR__/.env
+ExecStart=__APP_DIR__/venv/bin/gunicorn \
+    --workers __WORKERS__ \
+    --bind 127.0.0.1:__PORT__ \
+    --timeout 60 \
+    --preload \
+    wsgi:app
+Restart=on-failure
+RestartSec=3
+
+# Sandboxing básico (reduz o impacto de uma eventual falha de segurança
+# na aplicação; ajuste se precisar escrever fora destes diretórios).
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=__APP_DIR__
+
+[Install]
+WantedBy=multi-user.target

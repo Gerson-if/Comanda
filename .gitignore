@@ -10,3 +10,8 @@ app/static/uploads/*
 !app/static/uploads/.gitkeep
 .pytest_cache/
 *.log
+
+# Estado local gerado pelo instalador de deploy (específico de cada servidor)
+deploy/.deploy.conf
+deploy/backups/*
+!deploy/backups/.gitkeep

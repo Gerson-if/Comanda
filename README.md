@@ -369,66 +369,129 @@ local.
 
 ## Deploy em produção
 
-### Checklist antes de subir em produção
+O jeito recomendado de colocar o Comanda no ar é um VPS Ubuntu comum
+(sem Docker), usando o instalador guiado em `deploy/install.sh`. Ele
+cuida de tudo: dependências de sistema, banco de dados, ambiente
+virtual, migrations, serviço systemd, Nginx e, se você tiver um
+domínio, certificado SSL gratuito com renovação automática.
+
+### Requisitos
+
+- Um servidor com **Ubuntu 22.04 ou 24.04** (VPS de qualquer provedor),
+  acessado via SSH como root (ou um usuário com `sudo`).
+- O código do projeto já clonado no servidor, por exemplo em
+  `/opt/comanda`:
+  ```bash
+  sudo git clone <url-do-seu-repositorio> /opt/comanda
+  cd /opt/comanda
+  ```
+- Se for usar um domínio com SSL, aponte o DNS dele (registro `A`) para
+  o IP do servidor **antes** de rodar o instalador.
+
+### Instalação guiada
+
+```bash
+sudo bash deploy/install.sh
+```
+
+O script pergunta, em ordem:
+
+1. **Domínio ou IP** — informe um domínio (ex: `cardapio.seusite.com.br`)
+   ou deixe em branco para acessar direto pelo IP do servidor.
+2. **SSL** (só se você informou um domínio) — se quer configurar
+   HTTPS agora, e com qual autoridade certificadora gratuita:
+   **Let's Encrypt** (via `certbot`, recomendado) ou **ZeroSSL** (via
+   `acme.sh`). Sem domínio, a aplicação sobe em HTTP simples — você
+   pode rodar o instalador de novo mais tarde, depois de configurar um
+   domínio, para habilitar o SSL.
+3. **Banco de dados** — PostgreSQL local (o script instala e configura
+   sozinho, recomendado), SQLite (mais simples, sem serviço extra, ok
+   para pouco tráfego) ou uma `DATABASE_URL` externa que você já tenha
+   (RDS, Supabase, etc.).
+4. **Usuário de sistema** que vai rodar a aplicação (criado
+   automaticamente, sem privilégios de root).
+
+A partir daí é tudo automático: instala os pacotes necessários, cria o
+ambiente virtual e instala as dependências Python, gera uma
+`SECRET_KEY` aleatória e o arquivo `.env` de produção, roda as
+migrations, oferece para criar o Super Admin (`flask create-admin`,
+interativo), sobe o Gunicorn como serviço systemd (reinicia sozinho se
+cair ou se o servidor reiniciar) e configura o Nginx como proxy
+reverso — com certificado SSL já instalado, se você escolheu essa
+opção.
+
+Ao final, o script mostra a URL de acesso e os comandos mais usados
+(ver logs, reiniciar, atualizar).
+
+### Atualizando para uma versão mais nova
+
+```bash
+sudo bash deploy/update.sh
+```
+
+Esse script busca a versão mais recente do repositório e aplica a
+atualização com segurança:
+
+1. Faz backup do banco de dados (dump do PostgreSQL ou cópia do arquivo
+   SQLite) antes de mudar qualquer coisa.
+2. Atualiza o código só por *fast-forward* — se houver alterações
+   locais divergentes no servidor, ele para sem tocar em nada, em vez
+   de arriscar um merge malfeito.
+3. Atualiza as dependências Python e roda as migrations pendentes.
+4. Reinicia o serviço e confere se a aplicação voltou a responder
+   (`GET /healthz`).
+5. **Se qualquer passo falhar**, reverte automaticamente o código para
+   a versão anterior, restaura o backup do banco e reinicia o serviço
+   — a aplicação não fica fora do ar por causa de uma atualização
+   quebrada.
+
+Programe-o para rodar sozinho (ex: `cron` semanal) se quiser manter o
+servidor sempre atualizado sem intervenção manual:
+
+```bash
+# roda toda segunda-feira às 4h da manhã
+0 4 * * 1 root bash /opt/comanda/deploy/update.sh >> /var/log/comanda-update.log 2>&1
+```
+
+### Detalhes técnicos do que o instalador configura
+
+- **Serviço systemd** (`/etc/systemd/system/comanda.service`): roda o
+  Gunicorn com o usuário de sistema dedicado, reinicia automaticamente
+  em caso de falha. Comandos úteis: `systemctl status comanda`,
+  `systemctl restart comanda`, `journalctl -u comanda -f`.
+- **Nginx** (`/etc/nginx/sites-available/comanda`): proxy reverso para
+  o Gunicorn (que só escuta localmente) e serve `/static` diretamente,
+  com cache.
+- **SSL**: com Let's Encrypt, o `certbot` já configura a renovação
+  automática (`certbot.timer`, do próprio pacote do Ubuntu); com
+  ZeroSSL, o `acme.sh` instala sozinho uma tarefa periódica de
+  renovação durante sua própria instalação.
+- Os templates usados para gerar esses arquivos ficam em
+  `deploy/templates/`, caso queira revisar ou ajustar antes de rodar o
+  instalador.
+
+### Checklist de variáveis de ambiente (`.env`)
+
+O instalador já gera o `.env` automaticamente, mas se preferir
+configurar manualmente (ex: outra plataforma de hospedagem), os pontos
+obrigatórios são:
 
 1. **`SECRET_KEY`** — obrigatória, o app recusa iniciar com o valor
-   padrão de desenvolvimento. Gere uma com:
-   ```bash
-   python3 -c "import secrets; print(secrets.token_hex(32))"
-   ```
-2. **`DATABASE_URL`** — obrigatória, aponte para um PostgreSQL real.
+   padrão de desenvolvimento.
+2. **`DATABASE_URL`** — obrigatória em produção.
 3. **HTTPS** — por padrão o cookie de sessão exige conexão HTTPS
-   (`SESSION_COOKIE_SECURE=True`). Se você ainda não tem HTTPS
-   configurado (certificado/proxy reverso) e está testando direto por
-   HTTP, o login vai "não funcionar" silenciosamente — defina
-   `FORCE_HTTPS=false` temporariamente até ter HTTPS de verdade.
-4. **Atrás de um proxy reverso** (nginx, Render, Railway, Fly.io, load
-   balancer) — já está coberto: o app aplica `ProxyFix` automaticamente
-   em produção, então os cabeçalhos `X-Forwarded-*` são respeitados.
-5. **Migrations** — rode `flask db upgrade` antes do primeiro start (e
-   a cada deploy que inclua mudança de schema).
-6. **Rate limiting com múltiplos workers** — o limitador padrão é em
-   memória (não compartilhado entre processos). Com `gunicorn -w N`
-   (N > 1), configure `RATELIMIT_STORAGE_URI=redis://...` para um
-   limite realmente global; sem isso, o rate limit funciona, só que por
-   worker.
-
-### Opção 1 — Docker (qualquer plataforma que rode containers)
-
-```bash
-docker build -t comanda .
-docker run --env-file .env -p 8000:8000 comanda flask db upgrade   # uma vez
-docker run --env-file .env -p 8000:8000 comanda                    # sobe o servidor
-```
-
-### Opção 2 — Heroku / Railway / similares (usam `Procfile`)
-
-O `Procfile` já está configurado (`web` + `release` para rodar
-migrations automaticamente a cada deploy). Basta conectar o repositório
-e configurar as variáveis de ambiente do checklist acima.
-
-### Opção 3 — Servidor próprio / VM
-
-```bash
-export FLASK_ENV=production
-export SECRET_KEY="uma-chave-bem-aleatoria"
-export DATABASE_URL="postgresql+psycopg2://usuario:senha@host:5432/cardapio_saas"
-
-pip install -r requirements.txt
-flask db upgrade
-flask create-admin   # cria o super admin de produção interativamente
-gunicorn -w 4 -b 0.0.0.0:8000 --timeout 60 --preload wsgi:app
-```
-
-Coloque um nginx (ou similar) na frente para TLS e para servir
-`/static` diretamente com mais performance (opcional — o Flask também
-serve `/static` corretamente sozinho, só que sem cache/compressão
-otimizados).
+   (`SESSION_COOKIE_SECURE=True`). Sem HTTPS configurado ainda, defina
+   `FORCE_HTTPS=false` temporariamente, ou o login vai "não funcionar"
+   silenciosamente.
+4. **Migrations** — rode `flask db upgrade` antes do primeiro start.
+5. **Rate limiting com múltiplos workers** — o limitador padrão é em
+   memória (não compartilhado entre processos). Com mais de um worker
+   do Gunicorn, configure `RATELIMIT_STORAGE_URI=redis://...` para um
+   limite realmente global.
 
 ### Verificando que subiu certo
 
-- `GET /healthz` deve responder `{"status": "ok"}` — use isso como
-  health check do seu orquestrador/plataforma.
+- `GET /healthz` deve responder `{"status": "ok"}`.
 - Se a tela ficar em branco, abra o DevTools do navegador (F12 → aba
   Console/Network): qualquer erro de carregamento de asset ou
   JavaScript aparece ali. Todos os assets críticos (Bootstrap,
