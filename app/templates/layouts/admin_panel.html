@@ -8,16 +8,19 @@
 {% endblock %}
 
 {% block content %}
-<div class="app-shell" x-data="{ sidebarOpen: false, collapsed: false }">
+<div class="app-shell" x-data="sidebarShell()">
   <div class="sidebar-backdrop" :class="{show: sidebarOpen}" @click="sidebarOpen = false"></div>
 
   <aside class="sidebar" :class="{show: sidebarOpen, 'is-collapsed': collapsed}">
     <div class="sidebar-brand">
       <div class="mark"><i class="bi bi-shield-lock text-white"></i></div>
-      <div>
+      <div class="sidebar-brand-text">
         <div class="font-display text-white" style="font-size: 1rem; line-height: 1;">COMANDA</div>
         <div class="text-muted-custom" style="font-size: .7rem;">Super Admin</div>
       </div>
+      <button type="button" class="sidebar-collapse-btn d-none d-lg-inline-flex" @click="toggleCollapsed()" :title="collapsed ? 'Expandir menu' : 'Recolher menu'" :aria-label="collapsed ? 'Expandir menu' : 'Recolher menu'">
+        <i class="bi" :class="collapsed ? 'bi-chevron-double-right' : 'bi-chevron-double-left'"></i>
+      </button>
     </div>
 
     <nav class="nav-food">
@@ -36,6 +39,9 @@
       <a href="{{ url_for('admin.settings_appearance') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.settings_appearance' }}">
         <i class="bi bi-palette"></i><span class="nav-label">Aparência</span>
       </a>
+      <a href="{{ url_for('admin.settings_landing') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.settings_landing' }}">
+        <i class="bi bi-window"></i><span class="nav-label">Landing Page</span>
+      </a>
     </nav>
 
     <div class="sidebar-foot">
@@ -49,9 +55,6 @@
       <div class="d-flex align-items-center gap-3">
         <button type="button" class="btn btn-sm btn-outline-secondary d-lg-none" @click="sidebarOpen = true">
           <i class="bi bi-list"></i>
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary d-none d-lg-inline-block" @click="collapsed = !collapsed">
-          <i class="bi bi-layout-sidebar"></i>
         </button>
         <h1>{% block page_title %}{% endblock %}</h1>
       </div>

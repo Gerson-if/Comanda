@@ -156,7 +156,7 @@
       <div class="panel-title text-danger"><i class="bi bi-exclamation-triangle"></i> Zona de risco</div>
       <p class="text-muted-custom small mb-3">Exclui permanentemente a loja e todos os seus dados. Não pode ser desfeito.</p>
       <form method="POST" action="{{ url_for('admin.tenants_delete', tenant_id=tenant.id) }}" hx-boost="false"
-            onsubmit="return confirm('Excluir permanentemente {{ tenant.name }} e TODOS os seus dados?');">
+            data-confirm-message="Excluir permanentemente {{ tenant.name }} e TODOS os seus dados?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-sm btn-outline-danger w-100">Excluir loja permanentemente</button>
       </form>

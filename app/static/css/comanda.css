@@ -204,6 +204,16 @@ body {
 .sidebar-brand { padding: 24px 20px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; gap: 12px; }
 .sidebar.is-collapsed .sidebar-brand { justify-content: center; }
 .sidebar-brand .mark { width: 40px; height: 40px; border-radius: 10px; background: var(--accent); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 35%, transparent); }
+.sidebar-brand-text { flex: 1; min-width: 0; overflow: hidden; }
+.sidebar.is-collapsed .sidebar-brand-text { display: none; }
+/* Botão de recolher/expandir — vive DENTRO da sidebar-brand (não mais na
+   topbar), pra ficar claro que ele pertence/controla a sidebar. */
+.sidebar-collapse-btn {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--card-border);
+  background: transparent; color: var(--muted-text); align-items: center; justify-content: center;
+  font-size: .85rem; cursor: pointer; transition: background .2s, color .2s;
+}
+.sidebar-collapse-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
 
 .nav-food { padding: 16px 12px; flex: 1; overflow-y: auto; }
 .nav-food .nav-link {
@@ -218,6 +228,18 @@ body {
 .sidebar.is-collapsed .nav-link .nav-label, .sidebar.is-collapsed .nav-link .nav-count { display: none; }
 .sidebar-foot { padding: 20px; border-top: 1px solid var(--card-border); font-size: .8rem; color: var(--muted-text); white-space: nowrap; background: rgba(0,0,0,0.15); }
 .sidebar.is-collapsed .sidebar-foot { opacity: 0; padding: 16px 0; height: 0; overflow: hidden; border: none; }
+
+/* Drawer direito (offcanvas) usado para criar/editar produto e banner —
+   mais largo que o padrão do Bootstrap (400px) pra caber o layout de
+   duas colunas (dados do produto | fotos e complementos).
+   Importante: setar --bs-offcanvas-width (a variável que o Bootstrap usa
+   internamente pra "width" do .offcanvas-end) em vez de "width" direto —
+   o seletor composto ".offcanvas.offcanvas-end" do Bootstrap tem
+   especificidade maior que a classe única ".drawer-wide" e sempre
+   ganharia da nossa própria regra de "width". */
+.drawer-wide { --bs-offcanvas-width: min(920px, 95vw); background: var(--charcoal); color: var(--paper); }
+.drawer-wide .offcanvas-header { border-bottom: 1px solid var(--card-border); }
+.drawer-wide .btn-close { filter: invert(1) brightness(2); }
 
 .main { flex: 1; min-width: 0; background: var(--charcoal); }
 .topbar {
