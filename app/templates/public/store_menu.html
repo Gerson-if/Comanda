@@ -13,7 +13,7 @@
     --font-display: 'Fraunces', serif; --font-body: 'Plus Jakarta Sans', sans-serif; --font-mono: 'JetBrains Mono', monospace;
     --sidebar-w: 260px;
   }
-  body.menu-body { background: var(--bg); color: var(--text); font-family: var(--font-body); padding-bottom: 90px; margin: 0; }
+  body.menu-body { background: var(--bg); color: var(--text); font-family: var(--font-body); padding-bottom: 90px; margin: 0; overflow-x: hidden; }
 
   /* ===== GRAIN (textura sutil de fundo) ===== */
   .menu-grain {
@@ -27,7 +27,11 @@
     position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
     background: linear-gradient(180deg, var(--bg-soft), var(--bg));
     border-right: 1px solid var(--line); padding: 24px 18px;
-    display: flex; flex-direction: column; z-index: 1050;
+    display: flex; flex-direction: column; z-index: 1035;
+    /* Abaixo do z-index do offcanvas/modal do Bootstrap (1045/1055) de
+       propósito: mesmo fechando a sidebar antes de abrir o carrinho no
+       JS, isso garante que o carrinho nunca fique coberto pela sidebar
+       durante a transição de fechamento/abertura. */
     transform: translateX(-100%); transition: transform .3s cubic-bezier(.22,.9,.32,1);
   }
   .menu-sidebar.open { transform: translateX(0); }
@@ -55,22 +59,27 @@
   .menu-sidebar .search-box input::placeholder { color: var(--text-faint); }
   .menu-sidebar .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-faint); }
   .menu-sidebar .nav-label { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-faint); padding: 0 8px; margin-bottom: 6px; }
-  .menu-sidebar .nav-list { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; }
+  /* overflow-x: hidden é necessário aqui — com só overflow-y definido, o
+     navegador ativa rolagem horizontal automaticamente se algum filho
+     estourar a largura (era o caso, ver "all: unset" abaixo). */
+  .menu-sidebar .nav-list { display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; overflow-x: hidden; }
   .menu-sidebar .nav-list button {
-    all: unset; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
+    all: unset;
+    /* "all: unset" também reseta box-sizing para content-box — sem
+       forçar border-box aqui, width:100% + padding deixava o botão mais
+       largo que a própria barra lateral, cortando o contador à direita
+       e obrigando a rolar para o lado para vê-lo. */
+    box-sizing: border-box;
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
     color: var(--text-dim); font-weight: 600; font-size: .88rem; cursor: pointer; transition: background .2s, color .2s; width: 100%;
   }
   .menu-sidebar .nav-list button:hover { background: var(--surface); color: var(--text); }
   .menu-sidebar .nav-list button.active { background: var(--accent-soft); color: var(--accent); }
   .menu-sidebar .nav-list button .ico { width: 20px; height: 20px; flex-shrink: 0; opacity: .8; }
-  .menu-sidebar .nav-list button .count {
-    margin-left: auto; font-family: var(--font-mono); font-size: .68rem; color: var(--text-faint);
-    background: var(--surface-2); padding: 0 8px; border-radius: 999px;
-  }
-  .menu-sidebar .nav-list button.active .count { color: var(--accent); }
+  .menu-sidebar .nav-list button .label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
   .menu-sidebar .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); font-size: .7rem; color: var(--text-faint); line-height: 1.6; }
   .menu-sidebar .sidebar-footer b { color: var(--text-dim); }
-  .menu-sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1040; display: none; }
+  .menu-sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1030; display: none; }
   .menu-sidebar-overlay.show { display: block; }
 
   /* ===== HEADER ===== */
@@ -107,6 +116,10 @@
      (carrinho, produto ou checkout) está aberto, igual ao template. */
   .hidden-cart-ui { opacity: 0 !important; pointer-events: none !important; transform: scale(0.95) !important; }
 
+  /* Feedback rápido (sem abrir o carrinho) ao adicionar um item */
+  @keyframes cartBump { 0% { transform: scale(1); } 35% { transform: scale(1.22); } 65% { transform: scale(.92); } 100% { transform: scale(1); } }
+  .cart-bump { animation: cartBump .38s ease; }
+
   @media (min-width: 992px) {
     .menu-sidebar { transform: translateX(0) !important; }
     .menu-sidebar-overlay { display: none !important; }
@@ -127,9 +140,18 @@
   .banner-dots span.active { background: #fff; width: 28px; }
 
   /* ===== CHIPS (mobile) ===== */
-  .chip-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 4px; scrollbar-width: none; }
-  .chip-row::-webkit-scrollbar { display: none; }
-  .chip { background: var(--surface); border: 1px solid var(--line); color: var(--text-dim); padding: 6px 16px; border-radius: 999px; font-weight: 600; font-size: .8rem; cursor: pointer; white-space: nowrap; transition: all .2s; }
+  /* Antes era uma linha com overflow-x:auto — no mobile isso deixava
+     categorias cortadas e uma barra de rolagem horizontal pouco visível.
+     Agora as chips quebram linha (flex-wrap) e ficam todas visíveis. */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; max-width: 100%; }
+  /* max-width evita que um nome de categoria muito longo force rolagem
+     horizontal da página inteira — nesse caso extremo o texto trunca
+     com reticências em vez de "empurrar" a linha para fora da tela. */
+  .chip {
+    background: var(--surface); border: 1px solid var(--line); color: var(--text-dim); padding: 6px 14px;
+    border-radius: 999px; font-weight: 600; font-size: .78rem; cursor: pointer; transition: all .2s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100vw - 56px);
+  }
   .chip.active { background: var(--accent); color: #1B140F; border-color: var(--accent); }
 
   /* ===== PRODUTOS ===== */
@@ -183,13 +205,20 @@
   .btn-ghost-menu { background: transparent; border: 1px solid var(--line-strong); color: var(--text); border-radius: 10px; }
   .btn-ghost-menu:hover { background: var(--surface-2); color: #fff; }
 
+  /* Botão flutuante "resumo rápido": pill compacta no canto inferior
+     direito (mobile), com um ícone diferente do cart-icon do topo, e
+     mostrando itens + valor sem ocupar quase a largura toda da tela. */
   .cart-fab {
-    position: fixed; bottom: 20px; right: 20px; left: 20px; z-index: 1060; background: var(--accent); color: #1B140F;
-    border: none; border-radius: 14px; padding: 14px 20px; font-weight: 800; display: flex; justify-content: space-between;
-    align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,.4); max-width: 480px; margin: 0 auto; transition: transform .15s;
+    position: fixed; bottom: 16px; right: 16px; z-index: 1060; max-width: calc(100vw - 32px);
+    background: var(--accent); color: #1B140F; border: none; border-radius: 999px;
+    padding: 8px 16px 8px 12px; display: flex; align-items: center; gap: 9px;
+    box-shadow: 0 8px 22px rgba(0,0,0,.35); transition: transform .15s;
   }
-  .cart-fab:hover { transform: scale(1.02); }
-  @media (min-width: 576px) { .cart-fab { left: auto; width: 340px; } }
+  .cart-fab:hover { transform: scale(1.04); }
+  .cart-fab .cart-fab-icon { display: flex; flex-shrink: 0; }
+  .cart-fab .cart-fab-info { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
+  .cart-fab .cart-fab-info .qty { font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; opacity: .8; }
+  .cart-fab .cart-fab-info .price { font-family: var(--font-mono); font-weight: 800; font-size: .86rem; }
 
   /* ===== MODAL PRODUTO ===== */
   .product-modal-media { text-align: center; font-size: 3.4rem; background: var(--surface-2); border-radius: 12px; padding: 10px; overflow: hidden; }
@@ -251,8 +280,7 @@
       <template x-for="cat in categoriesWithAll" :key="cat.id">
         <button @click="setCategory(cat.id)" :class="{ active: currentCategory === cat.id }">
           <span class="ico" x-html="iconMap[cat.icon] || iconMap.other"></span>
-          <span x-text="cat.name"></span>
-          <span class="count" x-text="countProducts(cat.id)"></span>
+          <span class="label" x-text="cat.name"></span>
         </button>
       </template>
     </nav>
@@ -264,12 +292,12 @@
     </div>
   </aside>
 
-  <div class="menu-sidebar-overlay" :class="{ show: sidebarOpen }" @click="sidebarOpen = false"></div>
+  <div class="menu-sidebar-overlay" :class="{ show: sidebarOpen }" @click="closeSidebar()"></div>
 
   <header class="menu-topbar">
     <div class="container-fluid">
       <div class="d-flex align-items-center gap-3">
-        <button type="button" class="hamburger" @click="sidebarOpen = !sidebarOpen" aria-label="Abrir menu">
+        <button type="button" class="hamburger" @click="toggleSidebar()" aria-label="Abrir menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
         </button>
         <div class="brand">
@@ -279,7 +307,7 @@
           <div class="brand-name">{{ tenant.name }}<small>CARDÁPIO DIGITAL</small></div>
         </div>
       </div>
-      <div class="cart-icon" @click="openCart()" :class="{ 'hidden-cart-ui': cartUiHidden }">
+      <div class="cart-icon" @click="openCart()" :class="{ 'hidden-cart-ui': cartUiHidden, 'cart-bump': cartBump }">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
           <path d="M1 1h4l2.4 12.4a2 2 0 0 0 2 1.6h9.2a2 2 0 0 0 2-1.6L23 6H6"/>
@@ -359,10 +387,20 @@
     </main>
   </div>
 
-  <!-- Botão flutuante do carrinho -->
-  <button type="button" class="cart-fab" x-show="itemCount() > 0" x-cloak @click="openCart()" :class="{ 'hidden-cart-ui': cartUiHidden }">
-    <span>🧾 <span x-text="itemCount()"></span> ite(ns)</span>
-    <span x-text="'R$ ' + formatCents(subtotalCents())"></span>
+  <!-- Botão flutuante "resumo rápido": só no mobile, ícone de sacola
+       (diferente do cart-icon do topo), mostrando itens + valor -->
+  <button type="button" class="cart-fab d-lg-none" x-show="itemCount() > 0" x-cloak @click="openCart()" :class="{ 'hidden-cart-ui': cartUiHidden, 'cart-bump': cartBump }" aria-label="Ver resumo do pedido">
+    <span class="cart-fab-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+        <path d="M3 6h18"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+    </span>
+    <span class="cart-fab-info">
+      <span class="qty" x-text="itemCount() + (itemCount() === 1 ? ' item' : ' itens')"></span>
+      <span class="price" x-text="'R$ ' + formatCents(subtotalCents())"></span>
+    </span>
   </button>
 
   <!-- Modal de produto -->
@@ -622,7 +660,18 @@ function menuApp() {
     cart: {},
     bannerIndex: 0,
     bannerTimer: null,
-    cartUiHidden: false, // esconde ícone/botão flutuante do carrinho enquanto qualquer overlay estiver aberto
+    // Cada overlay controla só a própria flag (em vez de um "cartUiHidden"
+    // único mexido por todos) — o botão "Finalizar pedido", por exemplo,
+    // fecha o carrinho (data-bs-dismiss="offcanvas") e abre o checkout ao
+    // mesmo tempo; o evento de fechamento do carrinho só dispara ~300ms
+    // depois (fim da animação), e se ele resetasse uma flag compartilhada
+    // direto pra false, apagava o "true" que o checkout tinha acabado de
+    // ligar, fazendo o ícone reaparecer com o checkout ainda aberto.
+    cartOffcanvasOpen: false,
+    productModalOpen: false,
+    checkoutModalOpen: false,
+    cartBump: false, // pequena animação de feedback ao adicionar item, sem abrir o carrinho
+    historyGuardPushed: false, // ver comentário em pushHistoryGuard()
     submitting: false,
     errorMessage: null,
     confirmedOrder: null,
@@ -661,23 +710,81 @@ function menuApp() {
       this.startBannerTimer();
 
       // Enquanto o carrinho, o modal de produto ou o checkout estiverem
-      // abertos, escondemos o ícone do carrinho e o botão flutuante
-      // (mesma lógica unificada do template original).
+      // abertos, escondemos o ícone do carrinho e o botão flutuante (usamos
+      // "show"/"hide", que disparam na hora do clique, e não "shown"/"hidden",
+      // que só disparam ~300ms depois — ao fim da animação. Com o evento
+      // atrasado, o ícone/botão ficavam visíveis e clicáveis por cima do
+      // carrinho já aberto por uma fração de segundo, o que causava cliques
+      // no lugar errado).
       const cartOffcanvasEl = document.getElementById('cartOffcanvas');
-      cartOffcanvasEl.addEventListener('shown.bs.offcanvas', () => { this.cartUiHidden = true; });
-      cartOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => { this.cartUiHidden = false; });
+      cartOffcanvasEl.addEventListener('show.bs.offcanvas', () => { this.cartOffcanvasOpen = true; this.pushHistoryGuard(); });
+      cartOffcanvasEl.addEventListener('hidden.bs.offcanvas', () => { this.cartOffcanvasOpen = false; });
 
       const productModalEl = document.getElementById('productModal');
-      productModalEl.addEventListener('shown.bs.modal', () => { this.cartUiHidden = true; });
-      productModalEl.addEventListener('hidden.bs.modal', () => { this.cartUiHidden = false; this.selectedProduct = null; });
+      productModalEl.addEventListener('show.bs.modal', () => { this.productModalOpen = true; this.pushHistoryGuard(); });
+      productModalEl.addEventListener('hidden.bs.modal', () => { this.productModalOpen = false; this.selectedProduct = null; });
 
       const checkoutModalEl = document.getElementById('checkoutModal');
-      checkoutModalEl.addEventListener('shown.bs.modal', () => { this.cartUiHidden = true; });
-      checkoutModalEl.addEventListener('hidden.bs.modal', () => { this.cartUiHidden = false; });
+      checkoutModalEl.addEventListener('show.bs.modal', () => { this.checkoutModalOpen = true; this.pushHistoryGuard(); });
+      checkoutModalEl.addEventListener('hidden.bs.modal', () => { this.checkoutModalOpen = false; });
+
+      // Botão/gesto "voltar": fecha qualquer overlay aberto (carrinho, modal
+      // de produto/checkout, ou a barra lateral) em vez de deixar o
+      // navegador sair da página do cardápio.
+      //
+      // Importante: nunca chamamos history.back() por conta própria (nem em
+      // debounce/timeout) — só reagimos a um popstate real, disparado pelo
+      // próprio navegador quando o usuário aperta voltar. Uma versão anterior
+      // chamava history.back() de forma programática ao fechar um overlay
+      // "normalmente" (ex: clicando no X) para "limpar" o estado empilhado —
+      // isso consumia silenciosamente um passo do histórico sem o usuário
+      // pedir, e se ele apertasse voltar logo em seguida, saía do cardápio
+      // (o passo "de verdade" que ele queria voltar já tinha sido gasto).
+      window.addEventListener('popstate', () => {
+        this.historyGuardPushed = false;
+        this.sidebarOpen = false;
+        bootstrap.Offcanvas.getInstance(cartOffcanvasEl)?.hide();
+        bootstrap.Modal.getInstance(productModalEl)?.hide();
+        bootstrap.Modal.getInstance(checkoutModalEl)?.hide();
+      });
     },
 
     // --- Overlays (offcanvas do carrinho + modais de produto/checkout) ---
+    // Verdadeiro se QUALQUER overlay estiver aberto — calculado a partir das
+    // flags individuais em vez de ser uma flag própria, então o fechamento
+    // atrasado de um overlay nunca apaga o estado "aberto" de outro.
+    get cartUiHidden() {
+      return this.cartOffcanvasOpen || this.productModalOpen || this.checkoutModalOpen || this.sidebarOpen;
+    },
+    pushHistoryGuard() {
+      // Empilha UM estado de histórico "de proteção" na primeira vez que
+      // algum overlay abre. Enquanto ele estiver lá (historyGuardPushed),
+      // novas aberturas não empilham de novo — não fazemos "um push por
+      // overlay", e sim "um push por sessão de navegação", consumido de
+      // volta apenas quando o usuário realmente aperta voltar (ver
+      // popstate acima). Isso garante que apertar voltar com qualquer
+      // overlay aberto sempre feche o overlay em vez de sair do cardápio.
+      if (!this.historyGuardPushed) {
+        this.historyGuardPushed = true;
+        history.pushState({ menuOverlay: true }, '');
+      }
+    },
+    // --- Barra lateral (drawer de categorias no mobile) ---
+    toggleSidebar() {
+      if (this.sidebarOpen) this.closeSidebar(); else this.openSidebar();
+    },
+    openSidebar() {
+      this.sidebarOpen = true;
+      this.pushHistoryGuard();
+    },
+    closeSidebar() {
+      this.sidebarOpen = false;
+    },
     openCart() {
+      // Fecha a sidebar antes de abrir o carrinho — os dois nunca devem
+      // ficar visíveis ao mesmo tempo (a sidebar tem z-index maior que o
+      // offcanvas do Bootstrap e cobria o carrinho por cima).
+      this.closeSidebar();
       bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('cartOffcanvas')).show();
     },
     startCheckout() {
@@ -699,12 +806,7 @@ function menuApp() {
     },
     setCategory(catId) {
       this.currentCategory = catId;
-      if (window.innerWidth < 992) this.sidebarOpen = false;
-    },
-    countProducts(catId) {
-      if (catId === 'all') return Object.keys(this.products).length;
-      const cat = this.categories.find(c => c.id === catId);
-      return cat ? cat.products.length : 0;
+      if (window.innerWidth < 992) this.closeSidebar();
     },
     filteredProductsByCategory(catId) {
       const cat = this.categories.find(c => c.id === catId);
@@ -817,7 +919,11 @@ function menuApp() {
         };
       }
       this.closeProductModal();
-      this.openCart();
+      this.bumpCart();
+    },
+    bumpCart() {
+      this.cartBump = true;
+      setTimeout(() => { this.cartBump = false; }, 380);
     },
 
     // --- Carrinho ---
