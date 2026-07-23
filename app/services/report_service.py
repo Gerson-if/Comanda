@@ -1,16 +1,23 @@
 """
 Relatórios de vendas e financeiro do lojista.
 
-Agregações são feitas em Python (não em SQL específico de dialeto) para
-manter o código portável entre SQLite (dev/test) e PostgreSQL (produção)
-sem depender de funções de data específicas de cada banco — o volume de
-pedidos por loja não justifica a complexidade extra de agregação nativa
-no banco nesta fase.
+`summary()` e `top_products()` agregam com SQL (SUM/COUNT/GROUP BY —
+portáveis entre SQLite e PostgreSQL, sem depender de funções de data
+específicas de dialeto) em vez de carregar todos os pedidos/itens para
+somar em Python, que não escalava conforme a loja acumulava histórico.
+
+`daily_revenue_series()` continua agregando em Python: agrupar por dia de
+forma portável entre SQLite/PostgreSQL exigiria funções de data específicas
+de cada dialeto, e a janela é sempre pequena (dias/semanas), então o ganho
+não compensa o risco.
 """
 
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 
+from sqlalchemy import case, func
+
+from app.extensions import db
 from app.models import Order, OrderItem, OrderStatus
 
 CANCELED = OrderStatus.CANCELED.value
@@ -54,20 +61,30 @@ class ReportService:
         week_start = today_start - timedelta(days=today_start.weekday())
         month_start = today_start.replace(day=1)
 
-        all_orders = self._paid_orders_query().all()
+        row = (
+            db.session.query(
+                func.coalesce(
+                    func.sum(case((Order.created_at >= today_start, Order.total_cents), else_=0)), 0
+                ),
+                func.coalesce(
+                    func.sum(case((Order.created_at >= week_start, Order.total_cents), else_=0)), 0
+                ),
+                func.coalesce(
+                    func.sum(case((Order.created_at >= month_start, Order.total_cents), else_=0)), 0
+                ),
+                func.coalesce(func.sum(Order.total_cents), 0),
+                func.count(Order.id),
+            )
+            .filter(Order.tenant_id == self.tenant.id, Order.status != CANCELED)
+            .one()
+        )
 
         return {
-            "revenue_today_cents": sum(
-                o.total_cents for o in all_orders if _aware_utc(o.created_at) >= today_start
-            ),
-            "revenue_week_cents": sum(
-                o.total_cents for o in all_orders if _aware_utc(o.created_at) >= week_start
-            ),
-            "revenue_month_cents": sum(
-                o.total_cents for o in all_orders if _aware_utc(o.created_at) >= month_start
-            ),
-            "revenue_total_cents": sum(o.total_cents for o in all_orders),
-            "orders_total": len(all_orders),
+            "revenue_today_cents": int(row[0]),
+            "revenue_week_cents": int(row[1]),
+            "revenue_month_cents": int(row[2]),
+            "revenue_total_cents": int(row[3]),
+            "orders_total": int(row[4]),
         }
 
     def order_count_by_status(self) -> dict:
@@ -99,20 +116,20 @@ class ReportService:
         return series
 
     def top_products(self, limit: int = 5) -> list[dict]:
-        items = (
-            OrderItem.query.join(Order)
+        rows = (
+            db.session.query(
+                OrderItem.product_name,
+                func.sum(OrderItem.quantity),
+                func.sum(OrderItem.subtotal_cents),
+            )
+            .join(Order, OrderItem.order_id == Order.id)
             .filter(Order.tenant_id == self.tenant.id, Order.status != CANCELED)
+            .group_by(OrderItem.product_name)
+            .order_by(func.sum(OrderItem.subtotal_cents).desc())
+            .limit(limit)
             .all()
         )
-
-        aggregated = defaultdict(lambda: {"quantity": 0, "revenue_cents": 0})
-        for item in items:
-            entry = aggregated[item.product_name]
-            entry["quantity"] += item.quantity
-            entry["revenue_cents"] += item.subtotal_cents
-
-        ranked = sorted(aggregated.items(), key=lambda kv: kv[1]["revenue_cents"], reverse=True)
         return [
-            {"name": name, "quantity": data["quantity"], "revenue_cents": data["revenue_cents"]}
-            for name, data in ranked[:limit]
+            {"name": name, "quantity": int(quantity), "revenue_cents": int(revenue_cents)}
+            for name, quantity, revenue_cents in rows
         ]

@@ -15,10 +15,15 @@ class ProductRepository(TenantScopedRepository[Product]):
 
     def paginated(self, page: int, per_page: int = 12, category_id: Optional[int] = None):
         from sqlalchemy import select
+        from sqlalchemy.orm import joinedload, selectinload
 
         from app.extensions import db
 
-        stmt = select(Product).where(Product.tenant_id == self.tenant_id)
+        stmt = (
+            select(Product)
+            .where(Product.tenant_id == self.tenant_id)
+            .options(joinedload(Product.category), selectinload(Product.images))
+        )
         if category_id is not None:
             stmt = stmt.where(Product.category_id == category_id)
         stmt = stmt.order_by(Product.display_order, Product.name)
@@ -29,3 +34,9 @@ class ProductRepository(TenantScopedRepository[Product]):
 
     def count(self) -> int:
         return self._base_query().count()
+
+    def count_completed(self) -> int:
+        """Igual a count(), mas exclui rascunhos (price_cents == 0, criados
+        via /produtos/rascunho antes do lojista preencher o preço) — evita
+        que cliques em "novo produto" consumam a cota do plano sozinhos."""
+        return self._base_query().filter(Product.price_cents > 0).count()

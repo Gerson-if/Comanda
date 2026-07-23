@@ -19,8 +19,13 @@ class OrderRepository(TenantScopedRepository[Order]):
 
     def paginated(self, page: int, per_page: int = 12, status: str | None = None):
         from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
 
-        stmt = select(Order).where(Order.tenant_id == self.tenant_id)
+        stmt = (
+            select(Order)
+            .where(Order.tenant_id == self.tenant_id)
+            .options(selectinload(Order.items))
+        )
         if status:
             stmt = stmt.where(Order.status == status)
         stmt = stmt.order_by(Order.created_at.desc())
