@@ -31,7 +31,7 @@ class ProductService:
     # --- CRUD ---
     def create(self, *, name: str, description: str, price_reais: float, category_id: int | None, is_active: bool, cost_price_reais: float | None = None, tag: str | None = None) -> Product:
         plan = self.tenant.plan
-        if plan and plan.max_products is not None and self.repo.count() >= plan.max_products:
+        if plan and plan.max_products is not None and self.repo.count_completed() >= plan.max_products:
             raise ProductLimitReachedError(
                 f"Seu plano permite no máximo {plan.max_products} produtos. "
                 "Fale com o suporte para ampliar seu plano."

@@ -3,48 +3,5 @@
 {% block page_title %}{{ 'Editar banner' if banner else 'Novo banner' }}{% endblock %}
 
 {% block panel_content %}
-<a href="{{ url_for('lojista.banners_list') }}" class="link-chili small d-inline-block mb-3">&larr; Voltar para banners</a>
-
-<div class="panel" style="max-width: 520px;">
-  <form method="POST" enctype="multipart/form-data" novalidate>
-    {{ form.hidden_tag() }}
-
-    {% if banner %}
-    <img src="{{ url_for('static', filename=banner.image_path) }}" class="rounded w-100 mb-3" style="height: 160px; object-fit: cover;">
-    {% endif %}
-
-    <div class="mb-3">
-      <label class="dropzone d-block" onclick="this.querySelector('input[type=file]').click()">
-        <i class="bi bi-cloud-arrow-up d-block"></i>
-        <span class="small">{{ 'Clique para trocar a imagem' if banner else 'Clique para enviar a imagem do banner' }}</span>
-        {{ form.image() }}
-      </label>
-      {% for error in form.image.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
-    </div>
-
-    <div class="mb-3">
-      {{ form.title.label(class="form-label small fw-semibold") }}
-      {{ form.title(class="form-control", maxlength=120) }}
-      {% for error in form.title.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
-    </div>
-
-    <div class="mb-3">
-      {{ form.subtitle.label(class="form-label small fw-semibold") }}
-      {{ form.subtitle(class="form-control", maxlength=200) }}
-    </div>
-
-    <div class="mb-3">
-      {{ form.link_url.label(class="form-label small fw-semibold") }}
-      {{ form.link_url(class="form-control", placeholder="https://...", maxlength=255) }}
-      {% for error in form.link_url.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
-    </div>
-
-    <div class="d-flex align-items-center gap-2 mb-4">
-      {{ form.is_active() }}
-      {{ form.is_active.label(class="small text-muted-custom") }}
-    </div>
-
-    {{ form.submit(class="btn btn-chili") }}
-  </form>
-</div>
+{% include "lojista/banners/_form_fragment.html" %}
 {% endblock %}

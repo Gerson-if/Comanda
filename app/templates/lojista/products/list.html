@@ -10,8 +10,12 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h2 class="font-display h6 text-white m-0">Produtos</h2>
-  <a href="{{ url_for('lojista.products_create') }}" class="btn btn-chili btn-sm">+ Novo produto</a>
+  <button type="button" class="btn btn-chili btn-sm"
+          hx-post="{{ url_for('lojista.products_create_draft') }}" hx-target="#drawer-body" hx-swap="innerHTML"
+          data-bs-toggle="offcanvas" data-bs-target="#editDrawer">+ Novo produto</button>
 </div>
+
+<div id="products-grid-wrap" hx-trigger="productSaved from:body" hx-get="{{ request.full_path }}" hx-select="#products-grid-wrap" hx-swap="outerHTML" hx-disinherit="hx-select hx-trigger hx-get hx-swap">
 
 {% if categories %}
 <div class="mb-4 d-flex gap-2 flex-wrap">
@@ -42,9 +46,15 @@
           {% include "lojista/products/_status_badge.html" %}
         </div>
         <div class="text-muted-custom small mb-2">{{ product.category.name if product.category else "Sem categoria" }}</div>
+        {% if product.price_cents == 0 %}
+        <div class="price mb-3 text-muted-custom">Sem preço definido</div>
+        {% else %}
         <div class="price mb-3">R$ {{ "%.2f"|format(product.price_cents / 100) }}</div>
+        {% endif %}
         <div class="mt-auto d-flex gap-2">
-          <a href="{{ url_for('lojista.products_edit', product_id=product.id) }}" class="btn btn-sm btn-outline-secondary flex-grow-1 text-center">Editar</a>
+          <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1 text-center"
+                  hx-get="{{ url_for('lojista.products_edit', product_id=product.id) }}" hx-target="#drawer-body" hx-swap="innerHTML"
+                  data-bs-toggle="offcanvas" data-bs-target="#editDrawer">Editar</button>
           <button type="button" class="btn btn-sm btn-outline-danger"
                   hx-post="{{ url_for('lojista.products_delete', product_id=product.id) }}"
                   hx-target="#product-card-{{ product.id }}" hx-swap="outerHTML swap:0.15s"
@@ -64,4 +74,16 @@
 </div>
 {% endif %}
 {% include "_pagination.html" %}
+
+</div>
+
+<div class="offcanvas offcanvas-end drawer-wide" tabindex="-1" id="editDrawer" aria-labelledby="editDrawerLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="editDrawerLabel">Produto</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+  </div>
+  <div class="offcanvas-body" id="drawer-body">
+    <div class="text-center text-muted-custom py-5"><span class="spinner-border spinner-border-sm"></span></div>
+  </div>
+</div>
 {% endblock %}

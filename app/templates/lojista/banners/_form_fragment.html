@@ -1,0 +1,56 @@
+{% set form_action = form_action or request.path %}
+{% if not hide_back_link %}
+<a href="{{ url_for('lojista.banners_list') }}" class="link-chili small d-inline-block mb-3">&larr; Voltar para banners</a>
+{% endif %}
+
+<div class="panel" style="max-width: 520px;" id="banner-form-panel">
+  <form method="POST" action="{{ form_action }}" enctype="multipart/form-data" novalidate
+        hx-post="{{ form_action }}" hx-encoding="multipart/form-data" hx-target="#banner-form-panel" hx-select="#banner-form-panel" hx-swap="outerHTML">
+    {{ form.hidden_tag() }}
+
+    {% if banner %}
+    <img src="{{ url_for('static', filename=banner.image_path) }}" class="rounded w-100 mb-3" style="height: 160px; object-fit: cover;">
+    {% endif %}
+
+    <div class="mb-3">
+      <label class="dropzone d-block" onclick="this.querySelector('input[type=file]').click()">
+        <i class="bi bi-cloud-arrow-up d-block"></i>
+        <span class="small">{{ 'Clique para trocar a imagem' if banner else 'Clique para enviar a imagem do banner' }}</span>
+        {{ form.image() }}
+      </label>
+      {% for error in form.image.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.title.label(class="form-label small fw-semibold") }}
+      {{ form.title(class="form-control", maxlength=120) }}
+      {% for error in form.title.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+    </div>
+
+    <div class="mb-3">
+      {{ form.subtitle.label(class="form-label small fw-semibold") }}
+      {{ form.subtitle(class="form-control", maxlength=200) }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.link_url.label(class="form-label small fw-semibold") }}
+      {{ form.link_url(class="form-control", placeholder="https://...", maxlength=255) }}
+      {% for error in form.link_url.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-4">
+      {{ form.is_active() }}
+      {{ form.is_active.label(class="small text-muted-custom") }}
+    </div>
+
+    {{ form.submit(class="btn btn-chili") }}
+  </form>
+</div>
+
+{% if banner %}
+<form method="POST" action="{{ url_for('lojista.banners_delete', banner_id=banner.id) }}" class="mt-3"
+      hx-boost="false" data-confirm-message="Excluir este banner?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="btn btn-sm btn-outline-danger">Excluir banner</button>
+</form>
+{% endif %}
