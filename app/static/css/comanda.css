@@ -229,17 +229,24 @@ body {
 .sidebar-foot { padding: 20px; border-top: 1px solid var(--card-border); font-size: .8rem; color: var(--muted-text); white-space: nowrap; background: rgba(0,0,0,0.15); }
 .sidebar.is-collapsed .sidebar-foot { opacity: 0; padding: 16px 0; height: 0; overflow: hidden; border: none; }
 
-/* Drawer direito (offcanvas) usado para criar/editar produto e banner —
-   mais largo que o padrão do Bootstrap (400px) pra caber o layout de
-   duas colunas (dados do produto | fotos e complementos).
+/* Drawer direito (offcanvas) usado para criar/editar produto — os blocos
+   (dados do produto, fotos, complementos) ficam empilhados um abaixo do
+   outro, então essa largura só precisa caber confortavelmente o form de
+   uma coluna (não mais um layout de duas colunas lado a lado); o lojista
+   rola a barra pra baixo pra ir preenchendo cada bloco.
    Importante: setar --bs-offcanvas-width (a variável que o Bootstrap usa
    internamente pra "width" do .offcanvas-end) em vez de "width" direto —
    o seletor composto ".offcanvas.offcanvas-end" do Bootstrap tem
    especificidade maior que a classe única ".drawer-wide" e sempre
    ganharia da nossa própria regra de "width". */
-.drawer-wide { --bs-offcanvas-width: min(920px, 95vw); background: var(--charcoal); color: var(--paper); }
+.drawer-wide { --bs-offcanvas-width: min(640px, 95vw); background: var(--charcoal); color: var(--paper); }
 .drawer-wide .offcanvas-header { border-bottom: 1px solid var(--card-border); }
 .drawer-wide .btn-close { filter: invert(1) brightness(2); }
+
+/* Drawer estreito, para formulários ainda mais simples (ex.: banner). */
+.drawer-narrow { --bs-offcanvas-width: min(560px, 95vw); background: var(--charcoal); color: var(--paper); }
+.drawer-narrow .offcanvas-header { border-bottom: 1px solid var(--card-border); }
+.drawer-narrow .btn-close { filter: invert(1) brightness(2); }
 
 .main { flex: 1; min-width: 0; background: var(--charcoal); }
 .topbar {

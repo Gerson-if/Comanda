@@ -75,3 +75,26 @@ function sidebarShell() {
     });
   });
 })();
+
+/*
+ * "+ Novo produto" cria o rascunho assim que o lojista clica, pra já
+ * abrir a edição completa (fotos/complementos disponíveis desde o
+ * início — ver lojista.products_create_draft). Se ele fechar a barra
+ * lateral sem preencher nada, isso deixaria um card "Novo produto"
+ * vazio parado no cardápio. Ao fechar o drawer, avisa o servidor pra
+ * apagar o rascunho — mas só apaga se ele ainda estiver intocado
+ * (Product.is_untouched_draft); qualquer dado salvo, foto ou
+ * complemento cancela a limpeza.
+ */
+(function () {
+  const drawer = document.getElementById('editDrawer');
+  if (!drawer) return;
+
+  drawer.addEventListener('hidden.bs.offcanvas', () => {
+    const marker = document.getElementById('drawer-product-id');
+    if (!marker) return;
+    htmx.ajax('POST', marker.dataset.discardUrl, { swap: 'none' }).then(() => {
+      document.body.dispatchEvent(new Event('productSaved'));
+    });
+  });
+})();

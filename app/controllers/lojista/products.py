@@ -93,6 +93,24 @@ def products_create_draft():
     return redirect(url_for("lojista.products_edit", product_id=product.id))
 
 
+@lojista_bp.route("/produtos/<int:product_id>/descartar-rascunho", methods=["POST"])
+@lojista_required
+def products_discard_draft(product_id):
+    """Chamado via JS quando a barra lateral de edição é fechada (ver
+    comanda.js, listener de 'hidden.bs.offcanvas'). Só apaga se o
+    produto ainda for um rascunho intocado (Product.is_untouched_draft)
+    — se o lojista salvou qualquer dado, enviou foto ou criou um
+    complemento, o produto fica como está."""
+    tenant = get_current_tenant()
+    service = ProductService(tenant)
+    product = service.get_or_404(product_id)
+
+    if product.is_untouched_draft:
+        service.delete(product)
+
+    return ("", 204)
+
+
 @lojista_bp.route("/produtos/novo", methods=["GET", "POST"])
 @lojista_required
 def products_create():

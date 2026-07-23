@@ -72,6 +72,24 @@ class Product(db.Model, TenantScopedMixin, TimestampMixin):
         return self.images[0] if self.images else None
 
     @property
+    def is_untouched_draft(self) -> bool:
+        """True só para um rascunho recém-criado por "+ Novo produto" que
+        o lojista nunca chegou a editar (nome/preço/categoria ainda nos
+        valores padrão, sem fotos nem complementos). Usado para apagar
+        o rascunho automaticamente se o drawer for fechado sem uso, em
+        vez de deixar um card "Novo produto" vazio parado no cardápio."""
+        return (
+            self.name == "Novo produto"
+            and self.price_cents == 0
+            and not self.description
+            and not self.tag
+            and self.category_id is None
+            and not self.is_active
+            and not self.images
+            and not self.complement_groups
+        )
+
+    @property
     def margin_percent(self) -> float | None:
         """Margem real = (preço venda - preço custo) / preço venda, em %.
         Retorna None se não houver preço de custo cadastrado."""
