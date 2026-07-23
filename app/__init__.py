@@ -54,6 +54,7 @@ def create_app(config_name: str | None = None) -> Flask:
     _register_request_hooks(app)
     _register_error_handlers(app)
     _register_context_processors(app)
+    _register_template_filters(app)
 
     return app
 
@@ -100,9 +101,13 @@ def _register_blueprints(app: Flask) -> None:
         from datetime import datetime
 
         from app.models import Plan
+        from app.models.platform_settings import PlatformSettings
 
         plans = Plan.query.filter_by(is_active=True).order_by(Plan.price_cents).all()
-        return render_template("marketing/landing.html", plans=plans, current_year=datetime.now().year)
+        landing = PlatformSettings.get_or_create().landing_content_or_default
+        return render_template(
+            "marketing/landing.html", plans=plans, current_year=datetime.now().year, landing=landing,
+        )
 
 
 def _register_request_hooks(app: Flask) -> None:
@@ -157,6 +162,17 @@ def _get_platform_settings_safely():
         return PlatformSettings.get_or_create()
     except Exception:
         return None
+
+
+def _register_template_filters(app: Flask) -> None:
+    import base64
+
+    @app.template_filter("b64encode")
+    def b64encode_filter(value: str) -> str:
+        """Usado para montar favicons SVG inline como data URI (ver
+        public/store_menu.html) — base64 evita ter que escapar manualmente
+        caracteres reservados de URL como o "#" das cores hex do SVG."""
+        return base64.b64encode(value.encode("utf-8")).decode("ascii")
 
 
 def _register_cli_commands(app: Flask) -> None:

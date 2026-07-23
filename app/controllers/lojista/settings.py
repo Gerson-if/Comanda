@@ -74,6 +74,7 @@ def settings_menu():
             service.update_menu_settings(
                 slug=form.slug.data, pickup_enabled=form.pickup_enabled.data,
                 delivery_enabled=form.delivery_enabled.data,
+                show_price_from_label=form.show_price_from_label.data,
             )
         except TenantSettingsError as exc:
             flash(str(exc), "danger")

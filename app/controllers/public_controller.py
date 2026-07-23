@@ -6,12 +6,14 @@ Cardápio público — acessível sem login, por slug (/loja/<slug>).
                                  WhatsApp para o cliente finalizar o envio
 """
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, current_app, jsonify, render_template, request, session
 from flask_wtf.csrf import validate_csrf, CSRFError
 from marshmallow import ValidationError
 
+from app.controllers.lojista.orders import STATUS_LABELS
 from app.extensions import csrf
 from app.models import Category, Product
+from app.repositories.customer_repository import CustomerRepository
 from app.schemas.checkout_schema import CheckoutSchema
 from app.services.order_service import OrderService, OrderValidationError
 from app.utils.tenant_context import resolve_tenant_by_slug
@@ -129,6 +131,7 @@ def _build_menu_data(tenant):
             "delivery_fee_cents": tenant.delivery_fee_cents or 0,
             "free_delivery_above_cents": tenant.free_delivery_above_cents or 0,
             "min_order_cents": tenant.min_order_cents or 0,
+            "show_price_from_label": tenant.show_price_from_label,
             "address_line": address_line,
             "service_line": service_line,
             "opening_status": tenant.opening_status(),
@@ -207,3 +210,82 @@ def create_order(slug):
         ),
         201,
     )
+
+
+# --- "Login" opcional do cliente final, só pelo telefone (sem senha) ---
+#
+# Trade-off de segurança aceito conscientemente: não há verificação de
+# posse do número (sem SMS/OTP) — quem souber o telefone de um cliente
+# "entra" e vê o histórico de pedidos dele nesta loja. Isso não piora o
+# modelo de ameaça existente: o telefone já não é verificado em nenhum
+# lugar do sistema hoje (o checkout aceita qualquer telefone digitado,
+# sem confirmar posse). É uma conveniência opcional para o cliente
+# acompanhar os próprios pedidos, não uma tela de segurança de verdade.
+#
+# Por isso, também não criamos um Customer novo aqui — só reaproveitamos
+# um que já exista (ou seja, só quem já fez pelo menos um pedido nesta
+# loja consegue "entrar").
+
+
+@public_bp.route("/<slug>/entrar", methods=["POST"])
+@csrf.exempt  # validado manualmente abaixo via cabeçalho X-CSRFToken, igual create_order
+def customer_login(slug):
+    tenant = resolve_tenant_by_slug(slug)
+
+    if current_app.config.get("WTF_CSRF_ENABLED", True):
+        try:
+            validate_csrf(request.headers.get("X-CSRFToken", ""))
+        except CSRFError:
+            return jsonify({"error": "Sessão expirada, atualize a página e tente novamente."}), 400
+
+    json_data = request.get_json(silent=True) or {}
+    phone = (json_data.get("phone") or "").strip()
+    if not phone:
+        return jsonify({"error": "Informe um telefone."}), 400
+
+    customer = CustomerRepository(tenant.id).get_by_phone(phone)
+    if customer is None:
+        return jsonify({"error": "Nenhum pedido encontrado para esse telefone nesta loja."}), 404
+
+    session["customer_phone"] = phone
+    session["customer_tenant_id"] = tenant.id
+    return jsonify({"name": customer.name})
+
+
+@public_bp.route("/<slug>/meus-pedidos")
+def customer_orders(slug):
+    tenant = resolve_tenant_by_slug(slug)
+
+    phone = session.get("customer_phone")
+    if not phone or session.get("customer_tenant_id") != tenant.id:
+        return jsonify({"logged_in": False, "orders": []})
+
+    customer = CustomerRepository(tenant.id).get_by_phone(phone)
+    if customer is None:
+        return jsonify({"logged_in": False, "orders": []})
+
+    orders = sorted(customer.orders, key=lambda o: o.created_at, reverse=True)
+    return jsonify(
+        {
+            "logged_in": True,
+            "name": customer.name,
+            "orders": [
+                {
+                    "order_number": o.order_number,
+                    "status_label": STATUS_LABELS.get(o.status.value, o.status.value),
+                    "total_cents": o.total_cents,
+                    "created_at": o.created_at.isoformat(),
+                    "items": [{"name": item.product_name, "quantity": item.quantity} for item in o.items],
+                }
+                for o in orders
+            ],
+        }
+    )
+
+
+@public_bp.route("/<slug>/sair", methods=["POST"])
+@csrf.exempt
+def customer_logout(slug):
+    session.pop("customer_phone", None)
+    session.pop("customer_tenant_id", None)
+    return jsonify({"ok": True})

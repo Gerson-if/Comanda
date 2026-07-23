@@ -30,6 +30,7 @@ class MenuSettingsForm(FlaskForm):
     slug = StringField("Endereço do cardápio", validators=[DataRequired(), Length(min=3, max=150), slug_format])
     pickup_enabled = BooleanField("Aceitar retirada no local", default=True)
     delivery_enabled = BooleanField("Aceitar entrega", default=False)
+    show_price_from_label = BooleanField('Mostrar "a partir de" no preço de produtos com variação/complemento', default=True)
     submit = SubmitField("Salvar")
 
 

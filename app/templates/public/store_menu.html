@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{{ tenant.name }} — Cardápio{% endblock %}
 
+{% block favicon %}
+{% if tenant.logo_path %}
+<link rel="icon" href="{{ url_for('static', filename=tenant.logo_path) }}">
+{% else %}
+{% set favicon_svg %}<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='{{ theme.accent }}'/><text x='32' y='45' font-family='Arial, sans-serif' font-size='34' font-weight='900' fill='#1B140F' text-anchor='middle'>{{ tenant.name[:1]|upper }}</text></svg>{% endset %}
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,{{ favicon_svg|trim|b64encode }}">
+{% endif %}
+{% endblock %}
+
 {% block extra_head %}
 {# Fraunces, Plus Jakarta Sans e JetBrains Mono já são carregadas localmente via base.html (vendor/fonts/fonts.css) — sem dependência do Google Fonts. #}
 <style>
@@ -79,6 +88,10 @@
   .menu-sidebar .nav-list button .label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
   .menu-sidebar .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); font-size: .7rem; color: var(--text-faint); line-height: 1.6; }
   .menu-sidebar .sidebar-footer b { color: var(--text-dim); }
+  .customer-account-link { color: var(--text-faint); text-decoration: underline; }
+  .customer-account-link:hover { color: var(--accent); }
+  .customer-order-row { padding: 10px 0; border-bottom: 1px dashed var(--line); }
+  .customer-order-row:last-child { border-bottom: none; }
   .menu-sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1030; display: none; }
   .menu-sidebar-overlay.show { display: block; }
 
@@ -192,11 +205,21 @@
   .ticket .line-header .name { flex: 1; }
   .ticket .line-details { font-size: .68rem; color: #5c4d38; margin: 3px 0 4px 10px; line-height: 1.5; }
   .ticket .line-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
-  .ticket .qty-control { display: flex; align-items: center; gap: 6px; background: #e8ddc8; padding: 2px 6px; border-radius: 999px; }
-  .ticket .qty-control button { background: transparent; border: none; width: 24px; height: 24px; border-radius: 50%; font-weight: 700; color: #2A2116; cursor: pointer; }
-  .ticket .qty-control button:hover { background: rgba(0,0,0,.08); }
-  .ticket .remove-btn { background: transparent; border: none; color: #a84a30; font-size: .68rem; font-family: var(--font-mono); text-decoration: underline; cursor: pointer; padding: 4px 8px; opacity: .75; }
-  .ticket .remove-btn:hover { opacity: 1; }
+  .ticket .qty-control { display: flex; align-items: center; gap: 8px; background: #e8ddc8; padding: 3px; border-radius: 999px; }
+  .ticket .qty-control button {
+    background: #2A2116; border: none; width: 24px; height: 24px; border-radius: 50%; font-weight: 700;
+    color: #F4ECDD; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s, transform .1s;
+  }
+  .ticket .qty-control button:hover { background: var(--rust); }
+  .ticket .qty-control button:active { transform: scale(.9); }
+  .ticket .remove-btn {
+    background: rgba(168,74,48,.12); border: 1px solid rgba(168,74,48,.3); color: #a84a30;
+    font-size: .68rem; font-family: var(--font-mono); font-weight: 700; cursor: pointer;
+    padding: 5px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;
+    transition: background .15s, color .15s;
+  }
+  .ticket .remove-btn:hover { background: #a84a30; color: #fff; }
   .ticket .total-row { display: flex; justify-content: space-between; padding-top: 12px; margin-top: 6px; border-top: 2px dashed var(--paper-line); font-weight: 800; font-size: .98rem; }
 
   .btn-accent { background: var(--accent); border: none; color: #1B140F; font-weight: 800; border-radius: 10px; }
@@ -289,6 +312,9 @@
       {% if menu_data.tenant.service_line %}<b>{{ menu_data.tenant.service_line }}</b><br>{% endif %}
       {% if menu_data.tenant.address_line %}{{ menu_data.tenant.address_line }}<br>{% endif %}
       Pedido enviado direto pelo WhatsApp.
+      <div class="mt-2">
+        <a href="#" class="customer-account-link" @click.prevent="openCustomerAccount()" x-text="customerLoggedIn ? 'Meus pedidos' : 'Já é cliente? Ver meus pedidos'"></a>
+      </div>
     </div>
   </aside>
 
@@ -367,7 +393,7 @@
                   <h5 x-text="p.name"></h5>
                   <div class="desc" x-text="p.description"></div>
                   <div class="foot">
-                    <span class="price" x-html="'R$ ' + formatCents(p.price_cents) + (p.has_complements ? ' <small>a partir</small>' : '')"></span>
+                    <span class="price" x-html="(p.has_complements && tenant.show_price_from_label) ? '<small>a partir de</small> R$ ' + formatCents(p.price_cents) : 'R$ ' + formatCents(p.price_cents)"></span>
                     <button type="button" class="btn-add" @click.stop="openProductModal(p.id)">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
                     </button>
@@ -526,7 +552,7 @@
                     <span x-text="item.quantity"></span>
                     <button type="button" @click="incrementCartItem(cartKey)">+</button>
                   </div>
-                  <button type="button" class="remove-btn" @click="removeCartItem(cartKey)">remover</button>
+                  <button type="button" class="remove-btn" @click="removeCartItem(cartKey)"><i class="bi bi-trash3"></i> remover</button>
                 </div>
               </div>
             </template>
@@ -641,6 +667,48 @@
     </div>
   </div>
 
+  <!-- "Login" opcional do cliente (só telefone, sem senha) -->
+  <div class="modal fade menu-modal" id="customerAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" x-text="customerLoggedIn ? ('Olá, ' + customerName) : 'Ver meus pedidos'"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <template x-if="!customerLoggedIn">
+            <div>
+              <label class="form-label small mb-1">Telefone usado no pedido</label>
+              <input type="tel" class="form-control mb-2" x-model="customerPhoneInput" placeholder="Ex: 67999998888" @keydown.enter="loginCustomer()">
+              <div class="small mb-2" style="color: var(--rust);" x-show="customerError" x-text="customerError"></div>
+              <button type="button" class="btn btn-accent w-100" :disabled="customerLoading" @click="loginCustomer()">
+                <span x-show="!customerLoading">Ver meus pedidos</span><span x-show="customerLoading">Buscando...</span>
+              </button>
+            </div>
+          </template>
+          <template x-if="customerLoggedIn">
+            <div>
+              <template x-if="customerOrders.length === 0">
+                <p class="text-center small mb-0" style="color: var(--text-faint);">Nenhum pedido encontrado nesta loja.</p>
+              </template>
+              <template x-for="order in customerOrders" :key="order.order_number">
+                <div class="customer-order-row">
+                  <div class="d-flex justify-content-between">
+                    <strong>Pedido #<span x-text="order.order_number"></span></strong>
+                    <span class="small" x-text="order.status_label"></span>
+                  </div>
+                  <div class="small" style="color: var(--text-faint);" x-text="order.items.map(i => i.quantity + 'x ' + i.name).join(', ')"></div>
+                  <div class="small mt-1" x-text="'R$ ' + formatCents(order.total_cents)"></div>
+                </div>
+              </template>
+              <button type="button" class="btn btn-ghost-menu w-100 mt-3" @click="logoutCustomer()">Sair</button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
 
@@ -670,6 +738,15 @@ function menuApp() {
     cartOffcanvasOpen: false,
     productModalOpen: false,
     checkoutModalOpen: false,
+
+    // "Login" opcional do cliente por telefone (sem senha) — ver rotas
+    // /entrar, /meus-pedidos, /sair em public_controller.py
+    customerLoggedIn: false,
+    customerName: '',
+    customerPhoneInput: '',
+    customerError: null,
+    customerLoading: false,
+    customerOrders: [],
     cartBump: false, // pequena animação de feedback ao adicionar item, sem abrir o carrinho
     historyGuardPushed: false, // ver comentário em pushHistoryGuard()
     submitting: false,
@@ -993,6 +1070,63 @@ function menuApp() {
       } finally {
         this.submitting = false;
       }
+    },
+
+    // --- "Login" do cliente (só telefone, sem senha — ver comentário em
+    // public_controller.py sobre o trade-off de segurança aceito) ---
+    openCustomerAccount() {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('customerAccountModal')).show();
+      this.checkCustomerSession();
+    },
+    async checkCustomerSession() {
+      try {
+        const resp = await fetch(window.location.pathname + '/meus-pedidos');
+        const data = await resp.json();
+        if (data.logged_in) {
+          this.customerLoggedIn = true;
+          this.customerName = data.name;
+          this.customerOrders = data.orders;
+        }
+      } catch (err) {
+        // silencioso — se falhar, o modal só mostra o campo de telefone
+      }
+    },
+    async loginCustomer() {
+      this.customerError = null;
+      if (!this.customerPhoneInput.trim()) { this.customerError = 'Informe um telefone.'; return; }
+
+      this.customerLoading = true;
+      try {
+        const resp = await fetch(window.location.pathname + '/entrar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
+          body: JSON.stringify({ phone: this.customerPhoneInput.trim() }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) { this.customerError = data.error || 'Não encontramos pedidos com esse telefone.'; return; }
+
+        this.customerLoggedIn = true;
+        this.customerName = data.name;
+        await this.checkCustomerSession();
+      } catch (err) {
+        this.customerError = 'Falha de conexão. Verifique sua internet e tente novamente.';
+      } finally {
+        this.customerLoading = false;
+      }
+    },
+    async logoutCustomer() {
+      try {
+        await fetch(window.location.pathname + '/sair', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
+        });
+      } catch (err) {
+        // mesmo se falhar, limpa o estado local
+      }
+      this.customerLoggedIn = false;
+      this.customerName = '';
+      this.customerOrders = [];
+      this.customerPhoneInput = '';
     },
   };
 }

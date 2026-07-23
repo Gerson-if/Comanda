@@ -25,6 +25,7 @@
         <div class="d-flex flex-column gap-2 mb-4">
           <label class="d-flex align-items-center gap-2">{{ form.pickup_enabled() }} <span class="small">Aceitar retirada no local</span></label>
           <label class="d-flex align-items-center gap-2">{{ form.delivery_enabled() }} <span class="small">Aceitar entrega</span></label>
+          <label class="d-flex align-items-center gap-2">{{ form.show_price_from_label() }} <span class="small">Mostrar "a partir de" no preço de produtos com variação/complemento</span></label>
         </div>
 
         {{ form.submit(class="btn btn-chili") }}

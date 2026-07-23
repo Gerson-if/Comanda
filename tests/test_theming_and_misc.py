@@ -35,15 +35,42 @@ class TestColorUtils:
 
 
 class TestFavicon:
-    def test_favicon_links_present_on_public_and_admin_pages(self, app, client, login_as):
-        resp = client.get("/loja/braseiro-cia")
-        html = resp.get_data(as_text=True)
-        assert "favicon.svg" in html
-        assert "favicon.ico" in html
-
+    def test_admin_pages_use_platform_favicon(self, app, client, login_as):
         login_as(client, "admin@cardapio.saas", "admin123")
         resp = client.get("/admin/lojistas")
         assert "favicon.svg" in resp.get_data(as_text=True)
+
+    def test_public_menu_generates_favicon_from_store_initial_without_logo(self, app, client):
+        # Tenant de teste (braseiro-cia) não tem logo cadastrado — o
+        # cardápio público deve gerar um favicon SVG com a inicial da loja
+        # em vez do favicon genérico da plataforma.
+        resp = client.get("/loja/braseiro-cia")
+        html = resp.get_data(as_text=True)
+        assert "favicon.svg" not in html
+        assert "data:image/svg+xml;base64," in html
+
+    def test_public_menu_uses_logo_as_favicon_when_configured(self, app, client):
+        with app.app_context():
+            from app.extensions import db
+            from app.models import Tenant
+
+            tenant = Tenant.query.filter_by(slug="braseiro-cia").first()
+            tenant.logo_path = "uploads/tenant_1/logo.png"
+            db.session.commit()
+
+        try:
+            resp = client.get("/loja/braseiro-cia")
+            html = resp.get_data(as_text=True)
+            assert "uploads/tenant_1/logo.png" in html
+            assert "data:image/svg+xml;base64," not in html
+        finally:
+            with app.app_context():
+                from app.extensions import db
+                from app.models import Tenant
+
+                tenant = Tenant.query.filter_by(slug="braseiro-cia").first()
+                tenant.logo_path = None
+                db.session.commit()
 
 
 class TestUncategorizedBucketNaming:

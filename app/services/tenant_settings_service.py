@@ -46,7 +46,9 @@ class TenantSettingsService:
         db.session.commit()
         return self.tenant
 
-    def update_menu_settings(self, *, slug: str, pickup_enabled: bool, delivery_enabled: bool):
+    def update_menu_settings(
+        self, *, slug: str, pickup_enabled: bool, delivery_enabled: bool, show_price_from_label: bool = True,
+    ):
         if slug != self.tenant.slug:
             existing = self.repo.get_by_slug(slug)
             if existing and existing.id != self.tenant.id:
@@ -58,6 +60,7 @@ class TenantSettingsService:
 
         self.tenant.pickup_enabled = pickup_enabled
         self.tenant.delivery_enabled = delivery_enabled
+        self.tenant.show_price_from_label = show_price_from_label
         db.session.commit()
         return self.tenant
 

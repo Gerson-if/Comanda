@@ -118,6 +118,11 @@ class Tenant(db.Model, TimestampMixin):
     min_order_cents = Column(Integer, nullable=True)
     pickup_enabled = Column(Boolean, nullable=False, default=True)
 
+    # Mostra "a partir de R$ X" no card de produtos com variação/complemento
+    # (preço mínimo, não o preço final). Alguns lojistas preferem esconder
+    # esse texto e deixar só o preço base.
+    show_price_from_label = Column(Boolean, nullable=False, default=True, server_default="1")
+
     # Formas de pagamento aceitas no checkout público — todas ligadas por
     # padrão (compatível com o comportamento anterior, quando não havia
     # essa configuração). Desligar uma aqui a esconde do cliente no
