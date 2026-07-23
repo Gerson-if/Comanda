@@ -82,6 +82,12 @@ demais.
   ativos, organizados em seções com navegação rápida, carrinho
   flutuante e modais de carrinho/checkout, tudo em uma única página
   (Alpine.js), sem recarregar entre categorias.
+- **Experiência mobile**: botão de carrinho discreto (ícone + badge, em
+  vez de uma barra larga) que só aparece quando há itens; categorias
+  sempre visíveis, sem rolagem horizontal; adicionar um produto não
+  abre o carrinho automaticamente, só atualiza o contador; e o botão
+  "voltar" do navegador fecha carrinho/modais/barra lateral em vez de
+  sair do cardápio.
 - **Modal de produto** com imagem, descrição, grupos de variação e
   complementos, com o preço final recalculado ao vivo. O carrinho é
   indexado por produto + combinação de opções escolhidas, então dois
