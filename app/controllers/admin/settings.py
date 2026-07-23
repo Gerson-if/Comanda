@@ -1,6 +1,6 @@
 from flask import flash, redirect, render_template, url_for
 
-from app.forms.admin_forms import AdminAppearanceForm, AsaasSettingsForm
+from app.forms.admin_forms import AdminAppearanceForm, AsaasSettingsForm, LandingContentForm
 from app.services.payment_gateway.base import PaymentGatewayError
 from app.services.platform_settings_service import PlatformSettingsService
 from app.utils.decorators import super_admin_required
@@ -91,3 +91,40 @@ def settings_appearance():
         return redirect(url_for("admin.settings_appearance"))
 
     return render_template("admin/settings/appearance.html", form=form, settings=settings)
+
+
+@admin_bp.route("/configuracoes/landing", methods=["GET", "POST"])
+@super_admin_required
+def settings_landing():
+    service = PlatformSettingsService()
+    settings = service.settings
+    form = LandingContentForm()
+
+    if not form.is_submitted():
+        content = settings.landing_content_or_default
+        form.hero_title.data = content["hero_title"]
+        form.hero_subtitle.data = content["hero_subtitle"]
+        features = content["features"]
+        for i in range(3):
+            feature = features[i] if i < len(features) else {}
+            getattr(form, f"feature{i + 1}_icon").data = feature.get("icon", "")
+            getattr(form, f"feature{i + 1}_title").data = feature.get("title", "")
+            getattr(form, f"feature{i + 1}_description").data = feature.get("description", "")
+
+    if form.validate_on_submit():
+        service.update_landing_content(
+            hero_title=form.hero_title.data,
+            hero_subtitle=form.hero_subtitle.data,
+            features=[
+                {
+                    "icon": getattr(form, f"feature{i + 1}_icon").data,
+                    "title": getattr(form, f"feature{i + 1}_title").data,
+                    "description": getattr(form, f"feature{i + 1}_description").data,
+                }
+                for i in range(3)
+            ],
+        )
+        flash("Landing page atualizada.", "success")
+        return redirect(url_for("admin.settings_landing"))
+
+    return render_template("admin/settings/landing.html", form=form, settings=settings)

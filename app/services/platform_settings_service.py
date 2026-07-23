@@ -67,3 +67,19 @@ class PlatformSettingsService:
                 self.settings.admin_theme_accent = normalized
         db.session.commit()
         return self.settings
+
+    def update_landing_content(self, *, hero_title: str, hero_subtitle: str, features: list[dict]) -> PlatformSettings:
+        self.settings.landing_content = {
+            "hero_title": hero_title.strip(),
+            "hero_subtitle": hero_subtitle.strip(),
+            "features": [
+                {
+                    "icon": (f.get("icon") or "").strip(),
+                    "title": (f.get("title") or "").strip(),
+                    "description": (f.get("description") or "").strip(),
+                }
+                for f in features
+            ],
+        }
+        db.session.commit()
+        return self.settings

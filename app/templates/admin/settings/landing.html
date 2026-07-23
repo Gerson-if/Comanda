@@ -1,0 +1,52 @@
+{% extends "layouts/admin_panel.html" %}
+{% block title %}Landing Page — Comanda Admin{% endblock %}
+{% block page_title %}Landing page{% endblock %}
+
+{% block panel_content %}
+<div class="panel mb-3" style="max-width: 720px;">
+  <div class="panel-title"><i class="bi bi-window"></i> Textos da página inicial</div>
+  <p class="text-muted-custom small mb-3">
+    Edita o texto da <a href="{{ url_for('index') }}" target="_blank" class="link-chili">página inicial pública</a>
+    (a que os visitantes veem antes de criar uma conta) — título principal, subtítulo e as 3 caixas de destaque.
+    Os ícones usam nomes do <a href="https://icons.getbootstrap.com/" target="_blank" class="link-chili">Bootstrap Icons</a>
+    (ex: <code>bi-phone-vibrate</code>).
+  </p>
+
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+      {{ form.hero_title.label(class="form-label small fw-semibold") }}
+      {{ form.hero_title(class="form-control") }}
+      {% for error in form.hero_title.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+    </div>
+
+    <div class="mb-4">
+      {{ form.hero_subtitle.label(class="form-label small fw-semibold") }}
+      {{ form.hero_subtitle(class="form-control", rows=3) }}
+      {% for error in form.hero_subtitle.errors %}<p class="upload-error mt-1">{{ error }}</p>{% endfor %}
+    </div>
+
+    <hr class="border-secondary-subtle mb-4">
+
+    {% for i in [1, 2, 3] %}
+    <div class="row g-2 mb-3 align-items-start">
+      <div class="col-md-3">
+        {{ (form['feature%d_icon' % i]).label(class="form-label small fw-semibold") }}
+        {{ (form['feature%d_icon' % i])(class="form-control", placeholder="bi-star") }}
+      </div>
+      <div class="col-md-4">
+        {{ (form['feature%d_title' % i]).label(class="form-label small fw-semibold") }}
+        {{ (form['feature%d_title' % i])(class="form-control") }}
+      </div>
+      <div class="col-md-5">
+        {{ (form['feature%d_description' % i]).label(class="form-label small fw-semibold") }}
+        {{ (form['feature%d_description' % i])(class="form-control", rows=2) }}
+      </div>
+    </div>
+    {% endfor %}
+
+    {{ form.submit(class="btn btn-chili mt-2") }}
+  </form>
+</div>
+{% endblock %}

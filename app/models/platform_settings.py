@@ -14,7 +14,7 @@ Tabela de linha única (singleton): sempre o registro de id=1, obtido
 via `PlatformSettings.get_or_create()`.
 """
 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import JSON, Column, Integer, String
 
 from app.extensions import db
 from app.models.base import TimestampMixin
@@ -23,6 +23,34 @@ ASAAS_ENVIRONMENT_CHOICES = [
     ("sandbox", "Sandbox (testes)"),
     ("production", "Produção"),
 ]
+
+# Textos atuais de app/templates/marketing/landing.html, hardcoded lá
+# até agora — viram o default aqui, então nada muda visualmente pra quem
+# nunca editar a landing page pelo painel do Super Admin.
+DEFAULT_LANDING_CONTENT = {
+    "hero_title": "O Painel Administrativo que seu Delivery merece.",
+    "hero_subtitle": (
+        "Crie seu cardápio web em minutos, receba comandas organizadas via WhatsApp, "
+        "acompanhe métricas de faturamento em tempo real e reduza erros de entrega."
+    ),
+    "features": [
+        {
+            "icon": "bi-phone-vibrate",
+            "title": "Cardápio Ultra Rápido",
+            "description": "Seus clientes visualizam fotos otimizadas, escolhem complementos direto do navegador, sem downloads.",
+        },
+        {
+            "icon": "bi-qr-code-scan",
+            "title": "Gerador de QR Code",
+            "description": "O sistema gera automaticamente o endereço do seu estabelecimento e disponibiliza o QR Code para impressão.",
+        },
+        {
+            "icon": "bi-whatsapp",
+            "title": "Pedidos via WhatsApp",
+            "description": "Cada pedido é registrado no seu painel e enviado com um clique para o WhatsApp da loja, pronto para confirmar.",
+        },
+    ],
+}
 
 
 class PlatformSettings(db.Model, TimestampMixin):
@@ -38,6 +66,11 @@ class PlatformSettings(db.Model, TimestampMixin):
     # lojista compartilham o mesmo design system "chili"). Se vazio, usa
     # o vermelho-tijolo padrão da marca — nunca fica sem cor definida.
     admin_theme_accent = Column(String(7), nullable=True)
+
+    # Conteúdo editável da landing page (marketing/landing.html) — JSON
+    # pra caber título/subtítulo do hero + lista de features sem exigir
+    # uma migration nova a cada campo (mesmo padrão de Tenant.theme_settings).
+    landing_content = Column(JSON, nullable=True)
 
     @classmethod
     def get_or_create(cls) -> "PlatformSettings":
@@ -69,6 +102,17 @@ class PlatformSettings(db.Model, TimestampMixin):
         from app.utils.colors import darken_hex
 
         return {"accent": self.admin_theme_accent, "accent_dark": darken_hex(self.admin_theme_accent)}
+
+    @property
+    def landing_content_or_default(self) -> dict:
+        """Faz merge com DEFAULT_LANDING_CONTENT — se o Super Admin nunca
+        editou (ou editou só uma parte), os campos que faltam caem no
+        texto padrão em vez de aparecerem em branco na landing page."""
+        stored = self.landing_content or {}
+        merged = {**DEFAULT_LANDING_CONTENT, **stored}
+        if not merged.get("features"):
+            merged["features"] = DEFAULT_LANDING_CONTENT["features"]
+        return merged
 
     def __repr__(self):
         return f"<PlatformSettings asaas_configured={self.asaas_configured}>"

@@ -103,3 +103,27 @@ class AdminAppearanceForm(FlaskForm):
     def validate_accent_color(self, field):
         if field.data and not self.reset_to_default.data and not normalize_hex(field.data):
             raise ValidationError("Cor inválida.")
+
+
+class LandingContentForm(FlaskForm):
+    """Textos editáveis da landing page pública (marketing/landing.html)
+    — título/subtítulo do hero e as 3 caixas de destaque. Estrutura fixa
+    (3 slots) em vez de uma lista dinâmica, pra manter o form simples;
+    bate exatamente com o layout atual da página."""
+
+    hero_title = StringField("Título principal", validators=[DataRequired(), Length(max=200), not_blank])
+    hero_subtitle = TextAreaField("Subtítulo", validators=[DataRequired(), Length(max=500), not_blank])
+
+    feature1_icon = StringField("Ícone 1 (Bootstrap Icons)", validators=[DataRequired(), Length(max=40)])
+    feature1_title = StringField("Título 1", validators=[DataRequired(), Length(max=100), not_blank])
+    feature1_description = TextAreaField("Descrição 1", validators=[DataRequired(), Length(max=300), not_blank])
+
+    feature2_icon = StringField("Ícone 2 (Bootstrap Icons)", validators=[DataRequired(), Length(max=40)])
+    feature2_title = StringField("Título 2", validators=[DataRequired(), Length(max=100), not_blank])
+    feature2_description = TextAreaField("Descrição 2", validators=[DataRequired(), Length(max=300), not_blank])
+
+    feature3_icon = StringField("Ícone 3 (Bootstrap Icons)", validators=[DataRequired(), Length(max=40)])
+    feature3_title = StringField("Título 3", validators=[DataRequired(), Length(max=100), not_blank])
+    feature3_description = TextAreaField("Descrição 3", validators=[DataRequired(), Length(max=300), not_blank])
+
+    submit = SubmitField("Salvar landing page")
