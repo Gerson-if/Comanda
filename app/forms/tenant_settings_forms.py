@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField
-from wtforms import BooleanField, DecimalField, FormField, StringField, SubmitField
+from wtforms import BooleanField, DecimalField, FormField, SelectField, StringField, SubmitField
 from wtforms import Form as NoCsrfForm
 from wtforms.validators import DataRequired, Length, Optional, NumberRange, Regexp, ValidationError
 
@@ -60,6 +60,11 @@ class AppearanceSettingsForm(FlaskForm):
         render_kw={"type": "color"},
     )
     reset_to_default = BooleanField("Voltar para a cor padrão (âmbar)")
+    theme_mode = SelectField(
+        "Tema do cardápio",
+        choices=[("dark", "Escuro (atual)"), ("light", "Claro")],
+        default="dark",
+    )
     submit = SubmitField("Salvar aparência")
 
     def validate_accent_color(self, field):

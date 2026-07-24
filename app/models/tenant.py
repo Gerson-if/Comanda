@@ -71,6 +71,13 @@ class Plan(db.Model, TimestampMixin):
 
     is_active = Column(Boolean, nullable=False, default=True)  # plano disponível p/ contratação
 
+    # Exibição na landing page pública (marketing/landing.html) — antes o
+    # selo "MAIS VENDIDO" e a ordem dos cards eram hardcoded (2º plano
+    # sempre em destaque, ordem = data de criação). Agora o Super Admin
+    # controla os dois.
+    is_featured = Column(Boolean, nullable=False, default=False, server_default="0")
+    display_order = Column(Integer, nullable=False, default=0, server_default="0")
+
     tenants = relationship("Tenant", back_populates="plan")
 
     __table_args__ = (

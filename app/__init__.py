@@ -100,10 +100,10 @@ def _register_blueprints(app: Flask) -> None:
     def index():
         from datetime import datetime
 
-        from app.models import Plan
         from app.models.platform_settings import PlatformSettings
+        from app.repositories.plan_repository import PlanRepository
 
-        plans = Plan.query.filter_by(is_active=True).order_by(Plan.price_cents).all()
+        plans = PlanRepository().list_active_for_landing()
         landing = PlatformSettings.get_or_create().landing_content_or_default
         return render_template(
             "marketing/landing.html", plans=plans, current_year=datetime.now().year, landing=landing,

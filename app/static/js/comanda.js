@@ -18,6 +18,15 @@ function sidebarShell() {
       this.collapsed = !this.collapsed;
       localStorage.setItem('comandaSidebarCollapsed', this.collapsed ? '1' : '0');
     },
+    // O valor inicial já foi aplicado no <html> pelo script anti-flash em
+    // base.html (roda antes do Alpine) — aqui só refletimos o mesmo
+    // estado pra `:class`/`x-text` do botão sol/lua ficarem sincronizados.
+    colorMode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark',
+    toggleColorMode() {
+      this.colorMode = this.colorMode === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', this.colorMode);
+      localStorage.setItem('comandaColorMode', this.colorMode);
+    },
   };
 }
 
@@ -75,6 +84,48 @@ function sidebarShell() {
     });
   });
 })();
+
+/*
+ * Tooltip (Bootstrap) nos ícones do menu lateral — mostra o nome da
+ * seção ao passar o mouse, útil sobretudo com a sidebar recolhida (só
+ * ícone, sem o texto do nav-label). O botão de recolher/expandir fica
+ * de fora de propósito: o texto dele muda de acordo com o estado
+ * (collapsed) via Alpine (:title, atualiza a cada clique), e o
+ * Bootstrap Tooltip cacheia o título só na inicialização — usar os
+ * dois juntos deixaria a dica dessincronizada depois do primeiro clique.
+ */
+(function () {
+  document.querySelectorAll('.sidebar [data-bs-toggle="tooltip"]').forEach((el) => new bootstrap.Tooltip(el));
+})();
+
+/*
+ * Preview local (antes do envio) de imagens escolhidas em qualquer
+ * ".dropzone" (banner, logo da loja, fotos de produto) — lê o arquivo
+ * com FileReader e mostra no lugar do ícone/texto instrutivo. Reaplica
+ * depois de qualquer swap HTMX, porque o dropzone de fotos de produto é
+ * recriado a cada upload (hx-target="#image-gallery").
+ */
+function initDropzonePreviews(root) {
+  (root || document).querySelectorAll('.dropzone input[type=file]').forEach((input) => {
+    if (input.dataset.previewBound) return;
+    input.dataset.previewBound = '1';
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      const label = input.closest('.dropzone');
+      const img = label && label.querySelector('.dropzone-preview');
+      if (!file || !img) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        img.src = reader.result;
+        img.classList.remove('d-none');
+        label.querySelectorAll(':scope > i, :scope > span.small').forEach((el) => el.classList.add('d-none'));
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+initDropzonePreviews();
+document.body.addEventListener('htmx:afterSwap', (evt) => initDropzonePreviews(evt.detail.target));
 
 /*
  * "+ Novo produto" cria o rascunho assim que o lojista clica, pra já

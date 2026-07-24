@@ -19,7 +19,22 @@
       <div class="col-6">{{ form.max_categories.label(class="form-label small fw-semibold") }}{{ form.max_categories(class="form-control") }}</div>
       <div class="col-6">{{ form.max_products.label(class="form-label small fw-semibold") }}{{ form.max_products(class="form-control") }}</div>
     </div>
-    <div class="mb-4">{{ form.max_images_per_product.label(class="form-label small fw-semibold") }}{{ form.max_images_per_product(class="form-control") }}</div>
+    <div class="mb-3">{{ form.max_images_per_product.label(class="form-label small fw-semibold") }}{{ form.max_images_per_product(class="form-control") }}</div>
+
+    <hr class="border-secondary-subtle mb-3">
+    <p class="upload-meta mb-2">Exibição na <a href="{{ url_for('index') }}#planos" target="_blank" class="link-chili">landing page pública</a>:</p>
+    <div class="row g-2 mb-3 align-items-end">
+      <div class="col-6">
+        <div class="form-check">
+          {{ form.is_featured(class="form-check-input") }}
+          {{ form.is_featured.label(class="form-check-label small") }}
+        </div>
+      </div>
+      <div class="col-6">
+        {{ form.display_order.label(class="form-label small fw-semibold") }}
+        {{ form.display_order(class="form-control") }}
+      </div>
+    </div>
 
     {{ form.submit(class="btn btn-chili") }}
   </form>

@@ -68,18 +68,80 @@ class PlatformSettingsService:
         db.session.commit()
         return self.settings
 
-    def update_landing_content(self, *, hero_title: str, hero_subtitle: str, features: list[dict]) -> PlatformSettings:
+    def update_landing_content(
+        self, *, hero_title: str, hero_subtitle: str, features: list[dict],
+        hero_image_file=None, feature_image_files: list = None,
+        hero_video_file=None, theme: str = "chili",
+    ) -> PlatformSettings:
+        """
+        `hero_image_file`, `hero_video_file` e cada item de
+        `feature_image_files` (mesma ordem de `features`) são FileStorage
+        opcionais — só substituem o arquivo atual quando um novo for de
+        fato enviado (mesmo padrão de TenantSettingsService.update_store_info
+        pra logo da loja); o arquivo antigo é apagado depois do novo ser
+        salvo com sucesso, pra não acumular lixo em static/uploads/platform/.
+        """
+        from app.utils.uploads import (
+            InvalidImageError,
+            InvalidVideoError,
+            delete_product_image_file,
+            save_platform_image,
+            save_platform_video,
+        )
+
+        current = self.settings.landing_content_or_default
+        feature_image_files = feature_image_files or [None, None, None]
+
+        hero_image = current.get("hero_image")
+        if hero_image_file and hero_image_file.filename:
+            try:
+                new_hero_image = save_platform_image("landing", hero_image_file)
+            except InvalidImageError:
+                raise
+            else:
+                if hero_image:
+                    delete_product_image_file(hero_image)
+                hero_image = new_hero_image
+
+        hero_video = current.get("hero_video")
+        if hero_video_file and hero_video_file.filename:
+            try:
+                new_hero_video = save_platform_video("landing", hero_video_file)
+            except InvalidVideoError:
+                raise
+            else:
+                if hero_video:
+                    delete_product_image_file(hero_video)
+                hero_video = new_hero_video
+
+        new_features = []
+        for i, f in enumerate(features):
+            current_feature = current["features"][i] if i < len(current.get("features", [])) else {}
+            image = current_feature.get("image")
+            image_file = feature_image_files[i] if i < len(feature_image_files) else None
+            if image_file and image_file.filename:
+                try:
+                    new_image = save_platform_image("landing", image_file)
+                except InvalidImageError:
+                    raise
+                else:
+                    if image:
+                        delete_product_image_file(image)
+                    image = new_image
+            new_features.append({
+                "icon": (f.get("icon") or "").strip(),
+                "image": image,
+                "title": (f.get("title") or "").strip(),
+                "description": (f.get("description") or "").strip(),
+            })
+
         self.settings.landing_content = {
             "hero_title": hero_title.strip(),
             "hero_subtitle": hero_subtitle.strip(),
-            "features": [
-                {
-                    "icon": (f.get("icon") or "").strip(),
-                    "title": (f.get("title") or "").strip(),
-                    "description": (f.get("description") or "").strip(),
-                }
-                for f in features
-            ],
+            "hero_image": hero_image,
+            "hero_video": hero_video,
+            "theme": theme if theme in ("chili", "blue", "light") else "chili",
+            "features": new_features,
         }
         db.session.commit()
         return self.settings

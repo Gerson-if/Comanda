@@ -20,7 +20,8 @@ class AdminPlanService:
         return plan
 
     def create(self, *, name: str, description: str, price_reais: float, billing_cycle: str,
-               max_categories: int | None, max_products: int | None, max_images_per_product: int) -> Plan:
+               max_categories: int | None, max_products: int | None, max_images_per_product: int,
+               is_featured: bool = False, display_order: int | None = 0) -> Plan:
         slug = generate_unique_slug(name, self.repo.get_by_slug)
         plan = Plan(
             name=name.strip(),
@@ -31,13 +32,16 @@ class AdminPlanService:
             max_categories=max_categories,
             max_products=max_products,
             max_images_per_product=max_images_per_product,
+            is_featured=is_featured,
+            display_order=display_order or 0,
         )
         db.session.add(plan)
         db.session.commit()
         return plan
 
     def update(self, plan: Plan, *, name: str, description: str, price_reais: float, billing_cycle: str,
-               max_categories: int | None, max_products: int | None, max_images_per_product: int) -> Plan:
+               max_categories: int | None, max_products: int | None, max_images_per_product: int,
+               is_featured: bool = False, display_order: int | None = 0) -> Plan:
         if name.strip() != plan.name:
             plan.slug = generate_unique_slug(name, self.repo.get_by_slug, current_id=plan.id)
         plan.name = name.strip()
@@ -47,6 +51,8 @@ class AdminPlanService:
         plan.max_categories = max_categories
         plan.max_products = max_products
         plan.max_images_per_product = max_images_per_product
+        plan.is_featured = is_featured
+        plan.display_order = display_order or 0
         db.session.commit()
         return plan
 

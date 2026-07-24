@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Comanda — Cardápio Digital e Gestão via WhatsApp{% endblock %}
-{% block body_class %}theme-chili{% endblock %}
+{% block body_class %}theme-{{ 'blue' if landing.theme == 'blue' else 'chili' }}{% endblock %}
+{% block html_attrs %}{% if landing.theme == 'light' %}data-theme="light"{% endif %}{% endblock %}
 
 {% block extra_head %}
 <style>
-  .hero-section { padding: 140px 0 80px 0; background: radial-gradient(circle at 80% 20%, rgba(229,74,54,0.08) 0%, transparent 50%); }
-  .navbar-custom { background: rgba(26,22,18,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--card-border); }
+  .hero-section { position: relative; overflow: hidden; padding: 140px 0 80px 0; background: radial-gradient(circle at 80% 20%, rgba(229,74,54,0.08) 0%, transparent 50%); }
+  .hero-section .container { position: relative; z-index: 2; }
+  .hero-video-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .hero-video-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,8,6,.6), rgba(10,8,6,.85)); z-index: 1; }
+  .navbar-custom { background: color-mix(in srgb, var(--ink) 90%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--card-border); }
   .feature-icon-box { width: 48px; height: 48px; border-radius: 10px; background: rgba(229,74,54,0.12); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 20px; }
+  .feature-panel { transition: transform .25s ease, box-shadow .25s ease; }
+  .feature-panel:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.2); }
   .plan-card { border: 1px solid var(--card-border); transition: transform .2s, border-color .2s; }
   .plan-card:hover { transform: translateY(-4px); }
   .plan-card.featured { border-color: var(--accent); position: relative; }
@@ -14,6 +20,18 @@
     content: 'MAIS VENDIDO'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
     background: var(--accent); color: #fff; font-family: 'Archivo Black'; font-size: .65rem;
     padding: 4px 12px; border-radius: 20px; letter-spacing: .05em;
+  }
+  .final-cta { background: var(--ink); position: relative; overflow: hidden; }
+  .final-cta::before {
+    content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 60%);
+  }
+  @media (max-width: 767.98px) {
+    .hero-section { padding: 110px 0 56px 0; text-align: center; }
+    .hero-section .display-4 { font-size: 2.1rem; }
+    .hero-section .d-flex.gap-3 { align-items: stretch; }
+  }
+  @media (max-width: 575.98px) {
+    .navbar-custom .btn-outline-custom, .navbar-custom .btn-chili { padding: 8px 14px !important; font-size: .8rem !important; }
   }
 </style>
 {% endblock %}
@@ -33,6 +51,10 @@
 </nav>
 
 <section class="hero-section">
+  {% if landing.hero_video %}
+  <video class="hero-video-bg" src="{{ url_for('static', filename=landing.hero_video) }}" autoplay muted loop playsinline preload="auto"></video>
+  <div class="hero-video-overlay"></div>
+  {% endif %}
   <div class="container">
     <div class="row align-items-center pt-4">
       <div class="col-lg-6 mb-5 mb-lg-0 text-center text-lg-start">
@@ -44,11 +66,15 @@
         </div>
       </div>
       <div class="col-lg-6 text-center">
+        {% if landing.hero_image %}
+        <img src="{{ url_for('static', filename=landing.hero_image) }}" alt=""
+             class="img-fluid rounded shadow-lg mx-auto d-block" style="max-height: 420px; object-fit: cover;">
+        {% else %}
         <div class="panel text-start shadow-lg mx-auto" style="max-width:480px; border-color:var(--line);">
           <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary-subtle pb-2">
             <div class="d-flex align-items-center gap-2">
               <span class="pulse-dot"></span>
-              <strong class="font-mono text-white small">comanda.app/painel</strong>
+              <strong class="font-mono small" style="color: var(--card-text);">comanda.app/painel</strong>
             </div>
             <span class="badge bg-dark border border-secondary text-success small py-1" style="font-size:.7rem;">SISTEMA ONLINE</span>
           </div>
@@ -67,10 +93,11 @@
             </div>
           </div>
           <div class="p-3 rounded font-mono" style="background:rgba(0,0,0,.2); font-size:.8rem; border-left:3px solid var(--turmeric);">
-            <span class="text-white fw-bold">#1042 · Marina Souza</span>
+            <span class="fw-bold" style="color: var(--card-text);">#1042 · Marina Souza</span>
             <div class="text-muted-custom mt-1">1x X-Tudo Artesanal Super Recheado</div>
           </div>
         </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -85,9 +112,15 @@
     <div class="row g-4">
       {% for feature in landing.features %}
       <div class="col-md-4">
-        <div class="panel h-100">
+        <div class="panel feature-panel h-100">
+          {% if feature.image %}
+          <div class="feature-icon-box p-0" style="background: transparent; overflow: hidden;">
+            <img src="{{ url_for('static', filename=feature.image) }}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+          </div>
+          {% else %}
           <div class="feature-icon-box"><i class="bi {{ feature.icon }}"></i></div>
-          <h4 class="font-display h5 text-white mb-2">{{ feature.title }}</h4>
+          {% endif %}
+          <h4 class="font-display h5 mb-2" style="color: var(--card-text);">{{ feature.title }}</h4>
           <p class="text-muted-custom small m-0">{{ feature.description }}</p>
         </div>
       </div>
@@ -99,15 +132,15 @@
 <section id="planos" class="py-5">
   <div class="container py-5">
     <div class="text-center mb-5">
-      <h2 class="font-display text-white">Planos que cabem no bolso da sua operação</h2>
+      <h2 class="font-display">Planos que cabem no bolso da sua operação</h2>
       <p class="text-muted-custom">Sem comissão por pedido. Você escolhe como quer pagar.</p>
     </div>
     <div class="row g-4 justify-content-center">
       {% for plan in plans %}
       <div class="col-md-5 col-lg-4">
-        <div class="panel plan-card h-100 text-center d-flex flex-column {{ 'featured' if loop.index == 2 }}">
-          <div class="{{ 'text-accent' if loop.index == 2 else 'text-muted-custom' }} small fw-bold text-uppercase">{{ plan.name }}</div>
-          <div class="font-display h2 text-white my-3">R$ {{ "%.2f"|format(plan.price_cents / 100) }}<span style="font-size:.9rem; font-family:'Inter'; font-weight:normal; color:var(--muted-text);">/{{ "ano" if plan.billing_cycle.value == "yearly" else "mês" }}</span></div>
+        <div class="panel plan-card h-100 text-center d-flex flex-column {{ 'featured' if plan.is_featured }}">
+          <div class="{{ 'text-accent' if plan.is_featured else 'text-muted-custom' }} small fw-bold text-uppercase">{{ plan.name }}</div>
+          <div class="font-display h2 my-3" style="color: var(--card-text);">R$ {{ "%.2f"|format(plan.price_cents / 100) }}<span style="font-size:.9rem; font-family:'Inter'; font-weight:normal; color:var(--muted-text);">/{{ "ano" if plan.billing_cycle.value == "yearly" else "mês" }}</span></div>
           <hr class="border-secondary-subtle">
           <ul class="list-unstyled text-start small text-muted-custom flex-grow-1 my-3">
             <li class="mb-2"><i class="bi bi-check2 text-accent me-2"></i> {{ plan.max_products if plan.max_products is not none else "Produtos ilimitados" }}{{ " produtos" if plan.max_products is not none else "" }}</li>
@@ -115,7 +148,7 @@
             <li class="mb-2"><i class="bi bi-check2 text-accent me-2"></i> Link do cardápio + QR Code</li>
             {% if plan.description %}<li class="mb-2"><i class="bi bi-check2 text-accent me-2"></i> {{ plan.description }}</li>{% endif %}
           </ul>
-          <a href="{{ url_for('auth.register') }}" class="{{ 'btn btn-chili' if loop.index == 2 else 'btn-outline-custom text-center' }} w-100 mt-auto">Escolher {{ plan.name }}</a>
+          <a href="{{ url_for('auth.register') }}" class="{{ 'btn btn-chili' if plan.is_featured else 'btn-outline-custom text-center' }} w-100 mt-auto">Escolher {{ plan.name }}</a>
         </div>
       </div>
       {% else %}
@@ -124,6 +157,14 @@
       </div>
       {% endfor %}
     </div>
+  </div>
+</section>
+
+<section class="final-cta py-5">
+  <div class="container py-4 text-center" style="position: relative; z-index: 1;">
+    <h2 class="font-display text-white mb-3">Pronto para organizar o delivery da sua loja?</h2>
+    <p class="text-muted-custom mb-4 mx-auto" style="max-width: 480px;">Comece grátis, sem cartão de crédito — seu cardápio fica pronto em minutos.</p>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-chili fs-6 px-4">Criar Minha Loja Agora</a>
   </div>
 </section>
 

@@ -22,6 +22,7 @@ from app.controllers.lojista import categories  # noqa: E402,F401
 from app.controllers.lojista import products  # noqa: E402,F401
 from app.controllers.lojista import images  # noqa: E402,F401
 from app.controllers.lojista import orders  # noqa: E402,F401
+from app.controllers.lojista import customers  # noqa: E402,F401
 from app.controllers.lojista import reports  # noqa: E402,F401
 from app.controllers.lojista import banners  # noqa: E402,F401
 from app.controllers.lojista import settings  # noqa: E402,F401

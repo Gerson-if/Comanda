@@ -34,6 +34,7 @@
 
     <div class="mb-4">
       <label class="dropzone d-block" onclick="this.querySelector('input[type=file]').click()">
+        <img class="dropzone-preview d-none" alt="">
         <i class="bi bi-cloud-arrow-up d-block"></i>
         <span class="small">Clique para enviar/trocar a logo</span>
         {{ form.logo() }}

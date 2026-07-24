@@ -153,12 +153,17 @@ def settings_appearance():
     service = TenantSettingsService(tenant)
 
     if form.validate_on_submit():
-        service.update_appearance(accent_color=form.accent_color.data, reset_to_default=form.reset_to_default.data)
+        service.update_appearance(
+            accent_color=form.accent_color.data,
+            reset_to_default=form.reset_to_default.data,
+            theme_mode=form.theme_mode.data,
+        )
         flash("Aparência do cardápio atualizada.", "success")
         return redirect(url_for("lojista.settings_appearance"))
 
     if not form.is_submitted():
         form.accent_color.data = (tenant.theme_settings or {}).get("accent") or "#E8A33D"
+        form.theme_mode.data = (tenant.theme_settings or {}).get("mode") or "dark"
 
     return render_template("lojista/settings/appearance.html", form=form, tenant=tenant)
 

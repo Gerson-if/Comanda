@@ -4,6 +4,7 @@ from app.forms.admin_forms import AdminAppearanceForm, AsaasSettingsForm, Landin
 from app.services.payment_gateway.base import PaymentGatewayError
 from app.services.platform_settings_service import PlatformSettingsService
 from app.utils.decorators import super_admin_required
+from app.utils.uploads import InvalidImageError, InvalidVideoError
 
 from app.controllers.admin import admin_bp
 
@@ -104,6 +105,7 @@ def settings_landing():
         content = settings.landing_content_or_default
         form.hero_title.data = content["hero_title"]
         form.hero_subtitle.data = content["hero_subtitle"]
+        form.theme.data = content.get("theme", "chili")
         features = content["features"]
         for i in range(3):
             feature = features[i] if i < len(features) else {}
@@ -112,19 +114,27 @@ def settings_landing():
             getattr(form, f"feature{i + 1}_description").data = feature.get("description", "")
 
     if form.validate_on_submit():
-        service.update_landing_content(
-            hero_title=form.hero_title.data,
-            hero_subtitle=form.hero_subtitle.data,
-            features=[
-                {
-                    "icon": getattr(form, f"feature{i + 1}_icon").data,
-                    "title": getattr(form, f"feature{i + 1}_title").data,
-                    "description": getattr(form, f"feature{i + 1}_description").data,
-                }
-                for i in range(3)
-            ],
-        )
-        flash("Landing page atualizada.", "success")
-        return redirect(url_for("admin.settings_landing"))
+        try:
+            service.update_landing_content(
+                hero_title=form.hero_title.data,
+                hero_subtitle=form.hero_subtitle.data,
+                hero_image_file=form.hero_image.data,
+                hero_video_file=form.hero_video.data,
+                theme=form.theme.data,
+                features=[
+                    {
+                        "icon": getattr(form, f"feature{i + 1}_icon").data,
+                        "title": getattr(form, f"feature{i + 1}_title").data,
+                        "description": getattr(form, f"feature{i + 1}_description").data,
+                    }
+                    for i in range(3)
+                ],
+                feature_image_files=[getattr(form, f"feature{i + 1}_image").data for i in range(3)],
+            )
+        except (InvalidImageError, InvalidVideoError) as exc:
+            flash(str(exc), "danger")
+        else:
+            flash("Landing page atualizada.", "success")
+            return redirect(url_for("admin.settings_landing"))
 
     return render_template("admin/settings/landing.html", form=form, settings=settings)

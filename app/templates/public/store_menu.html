@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ tenant.name }} — Cardápio{% endblock %}
+{% block html_attrs %}data-theme="{{ 'light' if theme.mode == 'light' else 'dark' }}"{% endblock %}
 
 {% block favicon %}
 {% if tenant.logo_path %}
@@ -21,6 +22,17 @@
     --herb: #7FA05C; --herb-soft: rgba(127,160,92,0.16); --rust: #C1502E; --paper: #F4ECDD; --paper-line: #d9cbb0;
     --font-display: 'Fraunces', serif; --font-body: 'Plus Jakarta Sans', sans-serif; --font-mono: 'JetBrains Mono', monospace;
     --sidebar-w: 260px;
+  }
+  /* Tema claro do cardápio — escolhido pelo lojista em Configurações →
+     Aparência (Tenant.theme_settings["mode"]), aplicado via
+     data-theme="light" no <html> (ver block html_attrs). --accent
+     continua sendo a cor de destaque da loja nos dois modos; --paper/
+     --paper-line não mudam (é o "papel" do ticket de confirmação, que
+     deve parecer papel impresso independente do tema). */
+  [data-theme="light"] {
+    --bg: #FBF7EE; --bg-soft: #F5EEDF; --surface: #FFFFFF; --surface-2: #F2E9D8;
+    --line: rgba(36,28,20,0.10); --line-strong: rgba(36,28,20,0.18);
+    --text: #241C14; --text-dim: #5C4E3D; --text-faint: #8A7B64;
   }
   body.menu-body { background: var(--bg); color: var(--text); font-family: var(--font-body); padding-bottom: 90px; margin: 0; overflow-x: hidden; }
 
@@ -97,7 +109,7 @@
 
   /* ===== HEADER ===== */
   .menu-topbar {
-    background: rgba(27,20,15,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
     padding: 14px 0; position: sticky; top: 0; z-index: 1030; transition: margin-left .3s cubic-bezier(.22,.9,.32,1);
   }
   .menu-topbar .container-fluid { display: flex; align-items: center; justify-content: space-between; padding-left: 1.25rem; padding-right: 1.25rem; }

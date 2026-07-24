@@ -1,9 +1,30 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" {% block html_attrs %}{% endblock %}>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<script>
+  /* Aplica o modo claro/escuro salvo ANTES do CSS/primeiro paint —
+     evita o "flash" de um tema errado ao carregar a página (mesma ideia
+     usada para o estado da sidebar recolhida). Só entra em ação se a
+     página NÃO já definiu um tema fixo no servidor (data-theme no
+     <html>, ver block html_attrs): landing page e cardápio público
+     escolhem o tema no servidor (Super Admin / lojista) e não devem ser
+     afetados pela preferência pessoal salva de quando o usuário visitou
+     um dos painéis (localStorage é por domínio, não por página) — só os
+     painéis (lojista/admin) ficam sem data-theme fixo e usam o botão
+     sol/lua + esta preferência salva. */
+  (function () {
+    try {
+      if (document.documentElement.getAttribute('data-theme')) return;
+      var saved = localStorage.getItem('comandaColorMode');
+      if (saved === 'light' || saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', saved);
+      }
+    } catch (e) {}
+  })();
+</script>
 <title>{% block title %}Comanda{% endblock %}</title>
 
 {% block favicon %}

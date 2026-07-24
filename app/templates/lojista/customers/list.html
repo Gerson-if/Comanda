@@ -1,0 +1,44 @@
+{% extends "layouts/lojista_panel.html" %}
+{% block title %}Clientes — Comanda{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+
+{% block panel_content %}
+<p class="text-muted-custom small mb-4">
+  Clientes que se identificaram pelo telefone no seu cardápio público (login opcional, sem senha) — criados/atualizados automaticamente a cada pedido.
+</p>
+
+{% if pagination.items %}
+<div class="panel p-0" style="overflow-x: auto;">
+  <table class="table table-sm mb-0" style="color: var(--card-text);">
+    <thead>
+      <tr class="text-muted-custom small">
+        <th class="px-3 py-2">Nome</th>
+        <th class="py-2">Telefone</th>
+        <th class="py-2">Pedidos</th>
+        <th class="py-2">Total gasto</th>
+        <th class="py-2">Último pedido</th>
+        <th class="py-2 pe-3">Cliente desde</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in pagination.items %}
+      <tr>
+        <td class="px-3 py-2">{{ row.customer.name }}</td>
+        <td class="py-2">{{ row.customer.phone or "—" }}</td>
+        <td class="py-2">{{ row.order_count }}</td>
+        <td class="py-2">R$ {{ "%.2f"|format(row.total_spent_cents / 100) }}</td>
+        <td class="py-2">{{ row.last_order_at.strftime("%d/%m/%Y") if row.last_order_at else "—" }}</td>
+        <td class="py-2 pe-3">{{ row.customer.created_at.strftime("%d/%m/%Y") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="panel empty-state">
+  <i class="bi bi-people"></i>
+  Nenhum cliente identificado ainda. Assim que alguém entrar com o telefone no seu cardápio público, ele aparece aqui.
+</div>
+{% endif %}
+{% include "_pagination.html" %}
+{% endblock %}

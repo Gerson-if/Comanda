@@ -78,13 +78,13 @@ class TenantSettingsService:
         db.session.commit()
         return self.tenant
 
-    def update_appearance(self, *, accent_color=None, reset_to_default=False):
+    def update_appearance(self, *, accent_color=None, reset_to_default=False, theme_mode=None):
         """
         `theme_settings` é um JSON livre (pensado pra "cores, fontes
-        etc." desde que o campo foi criado) — por ora só guardamos a
-        cor de destaque escolhida pelo lojista para o cardápio público.
-        Usa merge em vez de sobrescrever o dict inteiro, para não perder
-        outras chaves que venham a existir aí no futuro.
+        etc." desde que o campo foi criado) — guarda a cor de destaque e
+        o modo (claro/escuro) escolhidos pelo lojista para o cardápio
+        público. Usa merge em vez de sobrescrever o dict inteiro, para
+        não perder outras chaves que venham a existir aí no futuro.
         """
         from app.utils.colors import normalize_hex
 
@@ -95,6 +95,10 @@ class TenantSettingsService:
             normalized = normalize_hex(accent_color)
             if normalized:
                 settings["accent"] = normalized
+        if theme_mode == "light":
+            settings["mode"] = "light"
+        else:
+            settings.pop("mode", None)
         self.tenant.theme_settings = settings or None
         db.session.commit()
         return self.tenant

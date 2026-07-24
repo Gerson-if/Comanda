@@ -30,6 +30,8 @@ def plans_create():
             max_categories=form.max_categories.data,
             max_products=form.max_products.data,
             max_images_per_product=form.max_images_per_product.data,
+            is_featured=form.is_featured.data,
+            display_order=form.display_order.data,
         )
         flash("Plano criado com sucesso.", "success")
         return redirect(url_for("admin.plans_list"))
@@ -58,6 +60,8 @@ def plans_edit(plan_id):
             max_categories=form.max_categories.data,
             max_products=form.max_products.data,
             max_images_per_product=form.max_images_per_product.data,
+            is_featured=form.is_featured.data,
+            display_order=form.display_order.data,
         )
         flash("Plano atualizado com sucesso.", "success")
         return redirect(url_for("admin.plans_list"))

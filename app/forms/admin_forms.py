@@ -1,8 +1,9 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField
 from wtforms import BooleanField, DateField, DecimalField, IntegerField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional, ValidationError
 
-from app.models.platform_settings import ASAAS_ENVIRONMENT_CHOICES
+from app.models.platform_settings import ASAAS_ENVIRONMENT_CHOICES, LANDING_THEME_CHOICES
 from app.utils.colors import normalize_hex
 from app.utils.validators import not_blank, phone_number
 
@@ -43,6 +44,8 @@ class PlanForm(FlaskForm):
     max_categories = IntegerField("Limite de categorias (vazio = ilimitado)", validators=[Optional(), NumberRange(min=0)])
     max_products = IntegerField("Limite de produtos (vazio = ilimitado)", validators=[Optional(), NumberRange(min=0)])
     max_images_per_product = IntegerField("Limite de imagens por produto", default=5, validators=[DataRequired(), NumberRange(min=1, max=20)])
+    is_featured = BooleanField('Destacar como "MAIS VENDIDO" na landing page')
+    display_order = IntegerField("Ordem de exibição na landing (menor aparece primeiro)", default=0, validators=[Optional(), NumberRange(min=0, max=999)])
     submit = SubmitField("Salvar plano")
 
 
@@ -113,17 +116,26 @@ class LandingContentForm(FlaskForm):
 
     hero_title = StringField("Título principal", validators=[DataRequired(), Length(max=200), not_blank])
     hero_subtitle = TextAreaField("Subtítulo", validators=[DataRequired(), Length(max=500), not_blank])
+    hero_image = FileField("Arte de destaque (opcional)", validators=[FileAllowed(["png", "jpg", "jpeg", "webp"], message="Formato não suportado.")])
+    hero_video = FileField(
+        "Vídeo de fundo do hero (opcional — substitui a arte de destaque)",
+        validators=[FileAllowed(["mp4", "webm"], message="Formato não suportado. Use MP4 ou WEBM.")],
+    )
+    theme = SelectField("Tema da landing page", choices=LANDING_THEME_CHOICES, default="chili")
 
     feature1_icon = StringField("Ícone 1 (Bootstrap Icons)", validators=[DataRequired(), Length(max=40)])
     feature1_title = StringField("Título 1", validators=[DataRequired(), Length(max=100), not_blank])
     feature1_description = TextAreaField("Descrição 1", validators=[DataRequired(), Length(max=300), not_blank])
+    feature1_image = FileField("Imagem 1 (opcional — substitui o ícone)", validators=[FileAllowed(["png", "jpg", "jpeg", "webp"], message="Formato não suportado.")])
 
     feature2_icon = StringField("Ícone 2 (Bootstrap Icons)", validators=[DataRequired(), Length(max=40)])
     feature2_title = StringField("Título 2", validators=[DataRequired(), Length(max=100), not_blank])
     feature2_description = TextAreaField("Descrição 2", validators=[DataRequired(), Length(max=300), not_blank])
+    feature2_image = FileField("Imagem 2 (opcional — substitui o ícone)", validators=[FileAllowed(["png", "jpg", "jpeg", "webp"], message="Formato não suportado.")])
 
     feature3_icon = StringField("Ícone 3 (Bootstrap Icons)", validators=[DataRequired(), Length(max=40)])
     feature3_title = StringField("Título 3", validators=[DataRequired(), Length(max=100), not_blank])
     feature3_description = TextAreaField("Descrição 3", validators=[DataRequired(), Length(max=300), not_blank])
+    feature3_image = FileField("Imagem 3 (opcional — substitui o ícone)", validators=[FileAllowed(["png", "jpg", "jpeg", "webp"], message="Formato não suportado.")])
 
     submit = SubmitField("Salvar landing page")

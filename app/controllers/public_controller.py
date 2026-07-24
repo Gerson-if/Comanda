@@ -162,6 +162,7 @@ def store_home(slug):
 
     default_theme = {"accent": "#E8A33D", "accent_dark": "#C97F1F", "accent_soft": "rgba(232,163,61,0.14)"}
     theme = tenant.public_theme_css_vars or default_theme
+    theme["mode"] = (tenant.theme_settings or {}).get("mode", "dark")
 
     return render_template(
         "public/store_menu.html", tenant=tenant, menu_data=menu_data, banners=banners_data, theme=theme,

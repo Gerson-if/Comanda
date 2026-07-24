@@ -44,6 +44,7 @@
         hx-encoding="multipart/form-data">
     {{ image_form.hidden_tag() }}
     <label class="dropzone d-block" onclick="this.querySelector('input[type=file]').click()">
+      <img class="dropzone-preview d-none" alt="">
       <i class="bi bi-cloud-arrow-up d-block"></i>
       <span class="small">Clique para enviar uma foto</span>
       {{ image_form.image(onchange="this.closest('form').requestSubmit()") }}

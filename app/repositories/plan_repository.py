@@ -10,3 +10,6 @@ class PlanRepository(BaseRepository[Plan]):
 
     def list_ordered(self):
         return self.model.query.order_by(Plan.price_cents).all()
+
+    def list_active_for_landing(self):
+        return self.model.query.filter_by(is_active=True).order_by(Plan.display_order, Plan.price_cents).all()

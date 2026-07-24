@@ -27,25 +27,37 @@ ASAAS_ENVIRONMENT_CHOICES = [
 # Textos atuais de app/templates/marketing/landing.html, hardcoded lá
 # até agora — viram o default aqui, então nada muda visualmente pra quem
 # nunca editar a landing page pelo painel do Super Admin.
+LANDING_THEME_CHOICES = [
+    ("chili", "Atual (marca)"),
+    ("blue", "Escuro alternativo"),
+    ("light", "Claro"),
+]
+
 DEFAULT_LANDING_CONTENT = {
     "hero_title": "O Painel Administrativo que seu Delivery merece.",
     "hero_subtitle": (
         "Crie seu cardápio web em minutos, receba comandas organizadas via WhatsApp, "
         "acompanhe métricas de faturamento em tempo real e reduza erros de entrega."
     ),
+    "hero_image": None,
+    "hero_video": None,
+    "theme": "chili",
     "features": [
         {
             "icon": "bi-phone-vibrate",
+            "image": None,
             "title": "Cardápio Ultra Rápido",
             "description": "Seus clientes visualizam fotos otimizadas, escolhem complementos direto do navegador, sem downloads.",
         },
         {
             "icon": "bi-qr-code-scan",
+            "image": None,
             "title": "Gerador de QR Code",
             "description": "O sistema gera automaticamente o endereço do seu estabelecimento e disponibiliza o QR Code para impressão.",
         },
         {
             "icon": "bi-whatsapp",
+            "image": None,
             "title": "Pedidos via WhatsApp",
             "description": "Cada pedido é registrado no seu painel e enviado com um clique para o WhatsApp da loja, pronto para confirmar.",
         },

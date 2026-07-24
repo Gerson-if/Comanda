@@ -12,34 +12,52 @@
   <div class="sidebar-backdrop" :class="{show: sidebarOpen}" @click="sidebarOpen = false"></div>
 
   <aside class="sidebar" :class="{show: sidebarOpen, 'is-collapsed': collapsed}">
+    <script>
+      /* Aplica o estado recolhido salvo ANTES do Alpine inicializar —
+         sem isso, cada navegação (app multi-página) pintava a sidebar
+         expandida por um instante e só depois recolhia, causando o
+         "pisca" reportado ao trocar de seção com o menu recolhido. */
+      (function () {
+        try {
+          if (localStorage.getItem('comandaSidebarCollapsed') === '1') {
+            var sb = document.currentScript.parentElement;
+            sb.classList.add('is-collapsed');
+            var ic = sb.querySelector('.hamburger-icon');
+            if (ic) ic.classList.add('is-active');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div class="sidebar-brand">
       <div class="mark"><i class="bi bi-shield-lock text-white"></i></div>
       <div class="sidebar-brand-text">
         <div class="font-display text-white" style="font-size: 1rem; line-height: 1;">COMANDA</div>
         <div class="text-muted-custom" style="font-size: .7rem;">Super Admin</div>
       </div>
-      <button type="button" class="sidebar-collapse-btn d-none d-lg-inline-flex" @click="toggleCollapsed()" :title="collapsed ? 'Expandir menu' : 'Recolher menu'" :aria-label="collapsed ? 'Expandir menu' : 'Recolher menu'">
-        <i class="bi" :class="collapsed ? 'bi-chevron-double-right' : 'bi-chevron-double-left'"></i>
-      </button>
     </div>
 
     <nav class="nav-food">
-      <a href="{{ url_for('admin.dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' }}">
+      <button type="button" class="nav-link nav-collapse-toggle d-none d-lg-flex" @click="toggleCollapsed()" :title="collapsed ? 'Expandir menu' : 'Recolher menu'" :aria-label="collapsed ? 'Expandir menu' : 'Recolher menu'">
+        <span class="hamburger-icon" :class="{ 'is-active': collapsed }"><span></span><span></span><span></span></span>
+        <span class="nav-label" x-text="collapsed ? 'Expandir menu' : 'Recolher menu'"></span>
+      </button>
+
+      <a href="{{ url_for('admin.dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Métricas Core">
         <i class="bi bi-speedometer2"></i><span class="nav-label">Métricas Core</span>
       </a>
-      <a href="{{ url_for('admin.tenants_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.tenants') }}">
+      <a href="{{ url_for('admin.tenants_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.tenants') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Gerenciar Lojistas">
         <i class="bi bi-shop"></i><span class="nav-label">Gerenciar Lojistas</span>
       </a>
-      <a href="{{ url_for('admin.plans_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.plans') }}">
+      <a href="{{ url_for('admin.plans_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.plans') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Planos &amp; Limites">
         <i class="bi bi-sliders"></i><span class="nav-label">Planos &amp; Limites</span>
       </a>
-      <a href="{{ url_for('admin.settings_asaas') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.settings_asaas') }}">
+      <a href="{{ url_for('admin.settings_asaas') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.settings_asaas') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Cobrança (Asaas)">
         <i class="bi bi-credit-card"></i><span class="nav-label">Cobrança (Asaas)</span>
       </a>
-      <a href="{{ url_for('admin.settings_appearance') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.settings_appearance' }}">
+      <a href="{{ url_for('admin.settings_appearance') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.settings_appearance' }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Aparência">
         <i class="bi bi-palette"></i><span class="nav-label">Aparência</span>
       </a>
-      <a href="{{ url_for('admin.settings_landing') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.settings_landing' }}">
+      <a href="{{ url_for('admin.settings_landing') }}" class="nav-link {{ 'active' if request.endpoint == 'admin.settings_landing' }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Landing Page">
         <i class="bi bi-window"></i><span class="nav-label">Landing Page</span>
       </a>
     </nav>
@@ -57,6 +75,11 @@
           <i class="bi bi-list"></i>
         </button>
         <h1>{% block page_title %}{% endblock %}</h1>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="theme-toggle-btn" :class="{ 'is-light': colorMode === 'light' }" @click="toggleColorMode()" :title="colorMode === 'light' ? 'Mudar para escuro' : 'Mudar para claro'" :aria-label="colorMode === 'light' ? 'Mudar para escuro' : 'Mudar para claro'">
+          <i class="bi bi-moon-stars"></i><i class="bi bi-sun"></i>
+        </button>
       </div>
     </header>
 

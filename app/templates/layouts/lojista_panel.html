@@ -7,42 +7,87 @@
 {% endif %}
 {% endblock %}
 
+{# Favicon do painel reflete a identidade da própria loja (útil pra
+   distinguir abas quando o lojista administra mais de uma loja) — mesma
+   lógica de app/templates/public/store_menu.html: usa a logo se
+   existir, senão gera um SVG com a inicial do nome na cor de destaque
+   pública do tenant (Tenant.public_theme_css_vars), com um vermelho-
+   tijolo padrão de fallback se o lojista nunca customizou essa cor. #}
+{% block favicon %}
+{% if current_tenant and current_tenant.logo_path %}
+<link rel="icon" href="{{ url_for('static', filename=current_tenant.logo_path) }}">
+{% elif current_tenant %}
+{% set favicon_accent = current_tenant.public_theme_css_vars.accent if current_tenant.public_theme_css_vars else '#E54A36' %}
+{% set favicon_svg %}<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='{{ favicon_accent }}'/><text x='32' y='45' font-family='Arial, sans-serif' font-size='34' font-weight='900' fill='#1B140F' text-anchor='middle'>{{ current_tenant.name[:1]|upper }}</text></svg>{% endset %}
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,{{ favicon_svg|trim|b64encode }}">
+{% else %}
+{{ super() }}
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <div class="app-shell" x-data="sidebarShell()">
   <div class="sidebar-backdrop" :class="{show: sidebarOpen}" @click="sidebarOpen = false"></div>
 
   <aside class="sidebar" :class="{show: sidebarOpen, 'is-collapsed': collapsed}">
+    <script>
+      /* Aplica o estado recolhido salvo ANTES do Alpine inicializar —
+         sem isso, cada navegação (app multi-página) pintava a sidebar
+         expandida por um instante e só depois recolhia, causando o
+         "pisca" reportado ao trocar de seção com o menu recolhido. */
+      (function () {
+        try {
+          if (localStorage.getItem('comandaSidebarCollapsed') === '1') {
+            var sb = document.currentScript.parentElement;
+            sb.classList.add('is-collapsed');
+            var ic = sb.querySelector('.hamburger-icon');
+            if (ic) ic.classList.add('is-active');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div class="sidebar-brand">
-      <div class="mark"><i class="bi bi-egg-fried text-white"></i></div>
+      <div class="mark">
+        {% if current_tenant and current_tenant.logo_path %}
+        <img src="{{ url_for('static', filename=current_tenant.logo_path) }}" alt="">
+        {% else %}
+        <i class="bi bi-egg-fried text-white"></i>
+        {% endif %}
+      </div>
       <div class="sidebar-brand-text">
         <div class="font-display text-white" style="font-size: 1rem; line-height: 1;">COMANDA</div>
         <div class="text-muted-custom" style="font-size: .7rem;">{{ current_tenant.name if current_tenant }}</div>
       </div>
-      <button type="button" class="sidebar-collapse-btn d-none d-lg-inline-flex" @click="toggleCollapsed()" :title="collapsed ? 'Expandir menu' : 'Recolher menu'" :aria-label="collapsed ? 'Expandir menu' : 'Recolher menu'">
-        <i class="bi" :class="collapsed ? 'bi-chevron-double-right' : 'bi-chevron-double-left'"></i>
-      </button>
     </div>
 
     <nav class="nav-food">
-      <a href="{{ url_for('lojista.dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.dashboard' }}">
+      <button type="button" class="nav-link nav-collapse-toggle d-none d-lg-flex" @click="toggleCollapsed()" :title="collapsed ? 'Expandir menu' : 'Recolher menu'" :aria-label="collapsed ? 'Expandir menu' : 'Recolher menu'">
+        <span class="hamburger-icon" :class="{ 'is-active': collapsed }"><span></span><span></span><span></span></span>
+        <span class="nav-label" x-text="collapsed ? 'Expandir menu' : 'Recolher menu'"></span>
+      </button>
+
+      <a href="{{ url_for('lojista.dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.dashboard' }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Dashboard">
         <i class="bi bi-speedometer2"></i><span class="nav-label">Dashboard</span>
       </a>
-      <a href="{{ url_for('lojista.orders_list', status='pending') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.orders_list' and request.args.get('status') == 'pending' }}">
+      <a href="{{ url_for('lojista.orders_list', status='pending') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.orders_list' and request.args.get('status') == 'pending' }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Novos Pedidos">
         <i class="bi bi-bell"></i><span class="nav-label">Novos Pedidos</span>
       </a>
-      <a href="{{ url_for('lojista.orders_list') }}" class="nav-link {{ 'active' if request.endpoint in ['lojista.orders_list', 'lojista.orders_detail'] and request.args.get('status') != 'pending' }}">
+      <a href="{{ url_for('lojista.orders_list') }}" class="nav-link {{ 'active' if request.endpoint in ['lojista.orders_list', 'lojista.orders_detail'] and request.args.get('status') != 'pending' }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Pedidos">
         <i class="bi bi-receipt"></i><span class="nav-label">Pedidos</span>
       </a>
-      <a href="{{ url_for('lojista.products_list') }}" class="nav-link {{ 'active' if request.endpoint and (request.endpoint.startswith('lojista.products') or request.endpoint.startswith('lojista.categories') or request.endpoint.startswith('lojista.images') or request.endpoint.startswith('lojista.complement')) }}">
+      <a href="{{ url_for('lojista.customers_list') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.customers_list' }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Clientes">
+        <i class="bi bi-people"></i><span class="nav-label">Clientes</span>
+      </a>
+      <a href="{{ url_for('lojista.products_list') }}" class="nav-link {{ 'active' if request.endpoint and (request.endpoint.startswith('lojista.products') or request.endpoint.startswith('lojista.categories') or request.endpoint.startswith('lojista.images') or request.endpoint.startswith('lojista.complement')) }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Cardápio">
         <i class="bi bi-egg-fried"></i><span class="nav-label">Cardápio</span>
       </a>
-      <a href="{{ url_for('lojista.banners_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('lojista.banners') }}">
+      <a href="{{ url_for('lojista.banners_list') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('lojista.banners') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Banners">
         <i class="bi bi-images"></i><span class="nav-label">Banners</span>
       </a>
-      <a href="{{ url_for('lojista.reports_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.reports_dashboard' }}">
+      <a href="{{ url_for('lojista.reports_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'lojista.reports_dashboard' }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Vendas">
         <i class="bi bi-graph-up-arrow"></i><span class="nav-label">Vendas</span>
       </a>
-      <a href="{{ url_for('lojista.settings_store') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('lojista.settings') }}">
+      <a href="{{ url_for('lojista.settings_store') }}" class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('lojista.settings') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Configurações">
         <i class="bi bi-gear"></i><span class="nav-label">Configurações</span>
       </a>
     </nav>
@@ -62,6 +107,9 @@
         <h1>{% block page_title %}{% endblock %}</h1>
       </div>
       <div class="d-flex align-items-center gap-2">
+        <button type="button" class="theme-toggle-btn" :class="{ 'is-light': colorMode === 'light' }" @click="toggleColorMode()" :title="colorMode === 'light' ? 'Mudar para escuro' : 'Mudar para claro'" :aria-label="colorMode === 'light' ? 'Mudar para escuro' : 'Mudar para claro'">
+          <i class="bi bi-moon-stars"></i><i class="bi bi-sun"></i>
+        </button>
         <a href="{{ cardapio_url_path if cardapio_url_path else '/loja/' ~ current_tenant.slug }}" target="_blank" class="btn btn-sm btn-outline-chili">
           <i class="bi bi-box-arrow-up-right"></i> Ver cardápio
         </a>
