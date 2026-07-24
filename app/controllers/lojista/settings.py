@@ -69,12 +69,16 @@ def settings_menu():
     form = MenuSettingsForm(obj=tenant)
     service = TenantSettingsService(tenant)
 
+    if not form.is_submitted():
+        form.notes_placeholder.data = (tenant.theme_settings or {}).get("notes_placeholder", "")
+
     if form.validate_on_submit():
         try:
             service.update_menu_settings(
                 slug=form.slug.data, pickup_enabled=form.pickup_enabled.data,
                 delivery_enabled=form.delivery_enabled.data,
                 show_price_from_label=form.show_price_from_label.data,
+                notes_placeholder=form.notes_placeholder.data,
             )
         except TenantSettingsError as exc:
             flash(str(exc), "danger")

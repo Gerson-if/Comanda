@@ -28,6 +28,12 @@
           <label class="d-flex align-items-center gap-2">{{ form.show_price_from_label() }} <span class="small">Mostrar "a partir de" no preço de produtos com variação/complemento</span></label>
         </div>
 
+        <div class="mb-4">
+          {{ form.notes_placeholder.label(class="form-label small fw-semibold") }}
+          {{ form.notes_placeholder(class="form-control", maxlength=150, placeholder="Digite uma observação (opcional)") }}
+          <div class="upload-meta">Aparece como dica no campo de observações do checkout do cliente. Deixe em branco para usar o texto padrão.</div>
+        </div>
+
         {{ form.submit(class="btn btn-chili") }}
       </form>
     </div>

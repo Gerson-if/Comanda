@@ -31,6 +31,10 @@ class MenuSettingsForm(FlaskForm):
     pickup_enabled = BooleanField("Aceitar retirada no local", default=True)
     delivery_enabled = BooleanField("Aceitar entrega", default=False)
     show_price_from_label = BooleanField('Mostrar "a partir de" no preço de produtos com variação/complemento', default=True)
+    notes_placeholder = StringField(
+        "Texto de exemplo no campo de observações do checkout",
+        validators=[Optional(), Length(max=150)],
+    )
     submit = SubmitField("Salvar")
 
 

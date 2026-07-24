@@ -16,6 +16,7 @@ from app.models import Category, Product
 from app.repositories.customer_repository import CustomerRepository
 from app.schemas.checkout_schema import CheckoutSchema
 from app.services.order_service import OrderService, OrderValidationError
+from app.utils.phone import normalize_br_phone
 from app.utils.tenant_context import resolve_tenant_by_slug
 from app.utils.whatsapp import build_order_message, build_whatsapp_url
 
@@ -77,6 +78,7 @@ def _build_menu_data(tenant):
                 "id": category.id,
                 "name": category.name,
                 "icon": category.icon or "other",
+                "icon_image_url": f"/static/{category.icon_image_path}" if category.icon_image_path else None,
                 "products": [_serialize_product(product) for product in products],
             }
         )
@@ -102,7 +104,8 @@ def _build_menu_data(tenant):
             {
                 "id": "uncategorized",
                 "name": "Sem categoria",
-                "icon": "other",
+                "icon": "uncategorized",
+                "icon_image_url": None,
                 "products": [_serialize_product(product) for product in uncategorized],
             }
         )
@@ -136,6 +139,7 @@ def _build_menu_data(tenant):
             "service_line": service_line,
             "opening_status": tenant.opening_status(),
             "accepted_payment_methods": tenant.accepted_payment_methods,
+            "notes_placeholder": (tenant.theme_settings or {}).get("notes_placeholder") or "Digite uma observação (opcional)",
         },
         "categories": menu_categories,
     }
@@ -240,9 +244,13 @@ def customer_login(slug):
             return jsonify({"error": "Sessão expirada, atualize a página e tente novamente."}), 400
 
     json_data = request.get_json(silent=True) or {}
-    phone = (json_data.get("phone") or "").strip()
-    if not phone:
+    raw_phone = (json_data.get("phone") or "").strip()
+    if not raw_phone:
         return jsonify({"error": "Informe um telefone."}), 400
+
+    phone = normalize_br_phone(raw_phone)
+    if phone is None:
+        return jsonify({"error": "Número inválido. Informe o telefone com DDD, como (67) 99999-9999."}), 400
 
     customer = CustomerRepository(tenant.id).get_by_phone(phone)
     if customer is None:

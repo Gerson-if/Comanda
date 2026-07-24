@@ -25,6 +25,11 @@ class Category(db.Model, TenantScopedMixin, TimestampMixin):
     name = Column(String(100), nullable=False)
     slug = Column(String(120), nullable=False)
     icon = Column(String(20), nullable=False, default="other", server_default="other")
+    # Ícone próprio enviado pelo lojista (PNG com transparência, ver
+    # app/utils/uploads.py:save_category_icon) — quando presente, tem
+    # prioridade sobre `icon` na renderização pública (mesmo padrão de
+    # hero_image/hero_video na landing page: upload > escolha padrão).
+    icon_image_path = Column(String(255), nullable=True)
     display_order = Column(Integer, nullable=False, default=0)
     is_active = Column(Boolean, nullable=False, default=True)
 

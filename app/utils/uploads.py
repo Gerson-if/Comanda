@@ -19,10 +19,11 @@ import os
 import uuid
 
 from flask import current_app
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from werkzeug.utils import secure_filename
 
 MAX_DIMENSION = 1600
+ICON_DIMENSION = 128
 MAX_VIDEO_BYTES = 25 * 1024 * 1024  # 25MB
 ALLOWED_VIDEO_EXTENSIONS = {"mp4", "webm"}
 
@@ -55,6 +56,41 @@ def save_banner_image(tenant_id: int, file_storage) -> str:
 
 def save_tenant_logo(tenant_id: int, file_storage) -> str:
     return _save_validated_image(os.path.join(f"tenant_{tenant_id}", "logo"), file_storage)
+
+
+def save_category_icon(tenant_id: int, category_id: int, file_storage) -> str:
+    """
+    Ícone próprio de uma categoria (cardápio público). Diferente de
+    `_save_validated_image`: NÃO converte para JPEG (perderia
+    transparência) — redimensiona para um quadrado pequeno fixo
+    (ICON_DIMENSION) preservando o canal alpha e salva como PNG.
+    """
+    filename = secure_filename(file_storage.filename or "")
+    if not filename or not _allowed_extension(filename):
+        raise InvalidImageError(
+            "Formato de imagem não suportado. Use PNG, JPG, JPEG ou WEBP."
+        )
+
+    try:
+        image = Image.open(file_storage.stream)
+        image.verify()
+        file_storage.stream.seek(0)
+        image = Image.open(file_storage.stream)
+        image = image.convert("RGBA")
+    except (UnidentifiedImageError, OSError):
+        raise InvalidImageError("Arquivo enviado não é uma imagem válida.")
+
+    image = ImageOps.fit(image, (ICON_DIMENSION, ICON_DIMENSION), Image.LANCZOS)
+
+    relative_subdir = os.path.join(f"tenant_{tenant_id}", "categories", str(category_id))
+    relative_dir = os.path.join("uploads", relative_subdir)
+    absolute_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], relative_subdir)
+    os.makedirs(absolute_dir, exist_ok=True)
+
+    new_filename = f"{uuid.uuid4().hex}.png"
+    image.save(os.path.join(absolute_dir, new_filename), format="PNG", optimize=True)
+
+    return os.path.join(relative_dir, new_filename).replace(os.sep, "/")
 
 
 def save_platform_image(subdir: str, file_storage) -> str:

@@ -25,11 +25,16 @@
       </tr>
     </thead>
     <tbody>
-      {% set icon_labels = {"other": "Outro", "burger": "Lanches", "pizza": "Pizzas", "drink": "Bebidas", "dessert": "Sobremesas", "combo": "Combos"} %}
       {% for category in categories %}
       <tr style="border-top: 1px solid var(--card-border);">
         <td class="px-3 py-3">{{ category.name }}</td>
-        <td class="px-3 py-3 small text-muted-custom">{{ icon_labels.get(category.icon, "Outro") }}</td>
+        <td class="px-3 py-3 small text-muted-custom">
+          {% if category.icon_image_path %}
+          <img src="{{ url_for('static', filename=category.icon_image_path) }}" alt="" style="width: 24px; height: 24px; border-radius: 6px; object-fit: cover; vertical-align: middle;"> Ícone próprio
+          {% else %}
+          {{ icon_labels.get(category.icon, "Outro") }}
+          {% endif %}
+        </td>
         <td class="px-3 py-3">{% include "lojista/categories/_status_badge.html" %}</td>
         <td class="px-3 py-3 text-end">
           <a href="{{ url_for('lojista.categories_edit', category_id=category.id) }}" class="btn btn-sm btn-outline-secondary">Editar</a>

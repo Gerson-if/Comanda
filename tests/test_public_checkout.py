@@ -232,7 +232,12 @@ class TestCheckout:
 
         with app.app_context():
             from app.models import Customer
+            from app.utils.phone import normalize_br_phone
 
-            customers = Customer.query.filter_by(tenant_id=tenant_id, phone="67922221111").all()
+            # Customer.phone é salvo normalizado (ver app/utils/phone.py) —
+            # não no formato bruto que veio no payload.
+            customers = Customer.query.filter_by(
+                tenant_id=tenant_id, phone=normalize_br_phone("67922221111")
+            ).all()
             assert len(customers) == 1
             assert len(customers[0].orders) == 2

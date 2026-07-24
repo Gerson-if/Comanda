@@ -1,9 +1,11 @@
 from flask import flash, redirect, render_template, request, url_for
 
 from app.forms.category_forms import CategoryForm
+from app.models.category import CATEGORY_ICON_CHOICES
 from app.services.category_service import CategoryService, CategoryLimitReachedError
 from app.utils.decorators import lojista_required
 from app.utils.tenant_context import get_current_tenant
+from app.utils.uploads import InvalidImageError
 
 from app.controllers.lojista import lojista_bp
 
@@ -14,7 +16,9 @@ def categories_list():
     tenant = get_current_tenant()
     service = CategoryService(tenant)
     categories = service.list_all()
-    return render_template("lojista/categories/list.html", categories=categories)
+    return render_template(
+        "lojista/categories/list.html", categories=categories, icon_labels=dict(CATEGORY_ICON_CHOICES),
+    )
 
 
 @lojista_bp.route("/categorias/nova", methods=["GET", "POST"])
@@ -26,9 +30,14 @@ def categories_create():
     if form.validate_on_submit():
         service = CategoryService(tenant)
         try:
-            service.create(name=form.name.data, is_active=form.is_active.data, icon=form.icon.data)
+            service.create(
+                name=form.name.data, is_active=form.is_active.data, icon=form.icon.data,
+                icon_image_file=form.icon_image.data,
+            )
         except CategoryLimitReachedError as exc:
             flash(str(exc), "warning")
+        except InvalidImageError as exc:
+            flash(str(exc), "danger")
         else:
             flash("Categoria criada com sucesso.", "success")
             return redirect(url_for("lojista.categories_list"))
@@ -46,9 +55,16 @@ def categories_edit(category_id):
     form = CategoryForm(obj=category)
 
     if form.validate_on_submit():
-        service.update(category, name=form.name.data, is_active=form.is_active.data, icon=form.icon.data)
-        flash("Categoria atualizada com sucesso.", "success")
-        return redirect(url_for("lojista.categories_list"))
+        try:
+            service.update(
+                category, name=form.name.data, is_active=form.is_active.data, icon=form.icon.data,
+                icon_image_file=form.icon_image.data, remove_icon_image=form.remove_icon_image.data,
+            )
+        except InvalidImageError as exc:
+            flash(str(exc), "danger")
+        else:
+            flash("Categoria atualizada com sucesso.", "success")
+            return redirect(url_for("lojista.categories_list"))
 
     return render_template("lojista/categories/form.html", form=form, category=category)
 

@@ -97,6 +97,7 @@
   .menu-sidebar .nav-list button:hover { background: var(--surface); color: var(--text); }
   .menu-sidebar .nav-list button.active { background: var(--accent-soft); color: var(--accent); }
   .menu-sidebar .nav-list button .ico { width: 20px; height: 20px; flex-shrink: 0; opacity: .8; }
+  .menu-sidebar .nav-list button .ico-img { object-fit: cover; border-radius: 4px; }
   .menu-sidebar .nav-list button .label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
   .menu-sidebar .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); font-size: .7rem; color: var(--text-faint); line-height: 1.6; }
   .menu-sidebar .sidebar-footer b { color: var(--text-dim); }
@@ -314,7 +315,8 @@
     <nav class="nav-list">
       <template x-for="cat in categoriesWithAll" :key="cat.id">
         <button @click="setCategory(cat.id)" :class="{ active: currentCategory === cat.id }">
-          <span class="ico" x-html="iconMap[cat.icon] || iconMap.other"></span>
+          <template x-if="cat.icon_image_url"><img class="ico ico-img" :src="cat.icon_image_url" alt=""></template>
+          <template x-if="!cat.icon_image_url"><span class="ico" x-html="iconMap[cat.icon] || iconMap.other"></span></template>
           <span class="label" x-text="cat.name"></span>
         </button>
       </template>
@@ -531,7 +533,7 @@
   </div>
 
   <!-- Carrinho (comanda) -->
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" data-bs-backdrop="static">
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title">Sua comanda</h5>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
@@ -603,7 +605,8 @@
 
           <div class="mb-3">
             <label>WhatsApp / telefone</label>
-            <input type="text" class="form-control" x-model="checkout.customer_phone" maxlength="20" placeholder="Ex: 67999998888">
+            <input type="tel" class="form-control" :value="checkout.customer_phone" @input="checkout.customer_phone = maskPhone($event.target.value)" maxlength="16" placeholder="(67) 99999-9999">
+            <div class="small mt-1" style="color: var(--rust);" x-show="checkout.customer_phone && !isPhoneValid(checkout.customer_phone)">Número inválido. Informe o telefone com DDD, como (67) 99999-9999.</div>
           </div>
 
           <div class="mb-3">
@@ -645,7 +648,7 @@
 
           <div class="mb-3">
             <label>Observações (opcional)</label>
-            <textarea class="form-control" rows="2" x-model="checkout.notes" maxlength="1000" placeholder="Ex: sem cebola, campainha quebrada, interfone 42..."></textarea>
+            <textarea class="form-control" rows="2" x-model="checkout.notes" maxlength="1000" :placeholder="tenant.notes_placeholder"></textarea>
           </div>
 
           <template x-if="tenant.min_order_cents > 0 && subtotalCents() < tenant.min_order_cents">
@@ -654,7 +657,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost-menu" @click="backToCart()">Voltar</button>
-          <button type="button" class="btn btn-accent flex-grow-1" :disabled="submitting" @click="submitOrder()">
+          <button type="button" class="btn btn-accent flex-grow-1" :disabled="submitting || !isPhoneValid(checkout.customer_phone)" @click="submitOrder()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.1.2-.3.3-.5.1-.2 0-.4 0-.5C10 8.7 9.5 7.4 9.3 7c-.2-.4-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-1 1-1 2.4s1 2.8 1.1 3c.1.2 2 3 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/></svg>
             <span x-show="!submitting">Enviar WhatsApp</span><span x-show="submitting">Enviando...</span>
           </button>
@@ -691,9 +694,10 @@
           <template x-if="!customerLoggedIn">
             <div>
               <label class="form-label small mb-1">Telefone usado no pedido</label>
-              <input type="tel" class="form-control mb-2" x-model="customerPhoneInput" placeholder="Ex: 67999998888" @keydown.enter="loginCustomer()">
+              <input type="tel" class="form-control mb-2" :value="customerPhoneInput" @input="customerPhoneInput = maskPhone($event.target.value)" placeholder="(67) 99999-9999" @keydown.enter="loginCustomer()">
+              <div class="small mb-2" style="color: var(--rust);" x-show="customerPhoneInput && !isPhoneValid(customerPhoneInput)">Número inválido. Informe o telefone com DDD, como (67) 99999-9999.</div>
               <div class="small mb-2" style="color: var(--rust);" x-show="customerError" x-text="customerError"></div>
-              <button type="button" class="btn btn-accent w-100" :disabled="customerLoading" @click="loginCustomer()">
+              <button type="button" class="btn btn-accent w-100" :disabled="customerLoading || !isPhoneValid(customerPhoneInput)" @click="loginCustomer()">
                 <span x-show="!customerLoading">Ver meus pedidos</span><span x-show="customerLoading">Buscando...</span>
               </button>
             </div>
@@ -785,7 +789,8 @@ function menuApp() {
       pizza: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l10 7-10 13L2 9z"/><circle cx="12" cy="9" r="1" fill="currentColor" stroke="none"/></svg>',
       drink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12l-1.5 18a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2z"/><path d="M5.5 8h13"/></svg>',
       dessert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h16l-1.5 6h-13z"/><path d="M12 14V4"/><path d="M8 8c1-2 3-3 4-2 1-1 3 0 4 2"/></svg>',
-      combo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 8h-1.4L17 4H7L5.4 8H4a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h.6L6 20h12l1.4-9h.6a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1z"/></svg>'
+      combo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 8h-1.4L17 4H7L5.4 8H4a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h.6L6 20h12l1.4-9h.6a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1z"/></svg>',
+      uncategorized: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 12.6l-8.3-8.3a2 2 0 0 0-1.4-.6H5a2 2 0 0 0-2 2v5.9c0 .5.2 1 .6 1.4l8.3 8.3a2 2 0 0 0 2.8 0l5.9-5.9a2 2 0 0 0 0-2.8z"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/><path d="M13.5 9.5a1.5 1.5 0 1 1 2 1.4c-.7.3-1 .7-1 1.4"/><path d="M14.5 14.5h.01"/></svg>'
     },
     emojiMap: { other: '🍽️', burger: '🍔', pizza: '🍕', drink: '🥤', dessert: '🍰', combo: '🍟' },
 
@@ -1031,6 +1036,25 @@ function menuApp() {
     },
     formatCents(cents) { return (cents / 100).toFixed(2).replace('.', ','); },
 
+    // --- Telefone (checkout + "Meus Pedidos") ---
+    // Formata incrementalmente enquanto digita: (DD) NNNN-NNNN (fixo) ou
+    // (DD) NNNNN-NNNN (celular) — mesma forma canônica que o servidor
+    // grava (ver app/utils/phone.py), então o que o cliente vê digitando
+    // já é o formato que vai ficar salvo.
+    maskPhone(value) {
+      const digits = (value || '').replace(/\D/g, '').slice(0, 11);
+      if (!digits) return '';
+      if (digits.length <= 2) return `(${digits}`;
+      const ddd = digits.slice(0, 2);
+      const rest = digits.slice(2);
+      if (rest.length <= 4) return `(${ddd}) ${rest}`;
+      if (digits.length <= 10) return `(${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`;
+      return `(${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`;
+    },
+    isPhoneValid(value) {
+      return /^\(\d{2}\) \d{4,5}-\d{4}$/.test(value || '');
+    },
+
     // --- Banner ---
     startBannerTimer() {
       clearInterval(this.bannerTimer);
@@ -1045,7 +1069,7 @@ function menuApp() {
       this.errorMessage = null;
 
       if (!this.checkout.customer_name.trim()) { this.errorMessage = 'Informe seu nome.'; return; }
-      if (!this.checkout.customer_phone.trim()) { this.errorMessage = 'Informe seu WhatsApp/telefone.'; return; }
+      if (!this.isPhoneValid(this.checkout.customer_phone)) { this.errorMessage = 'Número inválido. Informe o telefone com DDD, como (67) 99999-9999.'; return; }
       if (this.tenant.min_order_cents && this.subtotalCents() < this.tenant.min_order_cents) {
         this.errorMessage = `Pedido mínimo de R$ ${this.formatCents(this.tenant.min_order_cents)}.`;
         return;
@@ -1105,7 +1129,7 @@ function menuApp() {
     },
     async loginCustomer() {
       this.customerError = null;
-      if (!this.customerPhoneInput.trim()) { this.customerError = 'Informe um telefone.'; return; }
+      if (!this.isPhoneValid(this.customerPhoneInput)) { this.customerError = 'Número inválido. Informe o telefone com DDD, como (67) 99999-9999.'; return; }
 
       this.customerLoading = true;
       try {

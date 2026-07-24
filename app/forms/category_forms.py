@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField
 from wtforms import BooleanField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Length
 
@@ -16,5 +17,10 @@ class CategoryForm(FlaskForm):
         choices=CATEGORY_ICON_CHOICES,
         default="other",
     )
+    icon_image = FileField(
+        "Ícone próprio (opcional — substitui o ícone da biblioteca)",
+        validators=[FileAllowed(["png", "jpg", "jpeg", "webp"], message="Formato não suportado.")],
+    )
+    remove_icon_image = BooleanField("Remover ícone próprio (voltar a usar o da biblioteca)")
     is_active = BooleanField("Categoria ativa (visível no cardápio)", default=True)
     submit = SubmitField("Salvar categoria")

@@ -2,6 +2,7 @@ from app.extensions import db
 from app.models import Category
 from app.repositories.category_repository import CategoryRepository
 from app.utils.slugs import generate_unique_slug
+from app.utils.uploads import InvalidImageError, delete_product_image_file, save_category_icon
 
 
 class CategoryLimitReachedError(Exception):
@@ -24,7 +25,7 @@ class CategoryService:
             abort(404)
         return category
 
-    def create(self, name: str, is_active: bool, icon: str = "other") -> Category:
+    def create(self, name: str, is_active: bool, icon: str = "other", icon_image_file=None) -> Category:
         plan = self.tenant.plan
         if plan and plan.max_categories is not None and self.repo.count() >= plan.max_categories:
             raise CategoryLimitReachedError(
@@ -46,15 +47,41 @@ class CategoryService:
             display_order=max_order + 1,
         )
         db.session.add(category)
+        db.session.flush()  # precisa do id gerado para o caminho do ícone
+
+        if icon_image_file and icon_image_file.filename:
+            try:
+                category.icon_image_path = save_category_icon(self.tenant.id, category.id, icon_image_file)
+            except InvalidImageError:
+                db.session.rollback()
+                raise
+
         db.session.commit()
         return category
 
-    def update(self, category: Category, name: str, is_active: bool, icon: str = "other") -> Category:
+    def update(
+        self, category: Category, name: str, is_active: bool, icon: str = "other",
+        icon_image_file=None, remove_icon_image: bool = False,
+    ) -> Category:
         if name.strip() != category.name:
             category.slug = generate_unique_slug(name, self.repo.get_by_slug, current_id=category.id)
         category.name = name.strip()
         category.icon = icon or "other"
         category.is_active = is_active
+
+        if icon_image_file and icon_image_file.filename:
+            try:
+                new_path = save_category_icon(self.tenant.id, category.id, icon_image_file)
+            except InvalidImageError:
+                raise
+            else:
+                if category.icon_image_path:
+                    delete_product_image_file(category.icon_image_path)
+                category.icon_image_path = new_path
+        elif remove_icon_image and category.icon_image_path:
+            delete_product_image_file(category.icon_image_path)
+            category.icon_image_path = None
+
         db.session.commit()
         return category
 

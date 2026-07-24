@@ -22,6 +22,7 @@ from app.models import DeliveryType, Order, OrderItem, OrderItemChoice, OrderSta
 from app.repositories.customer_repository import CustomerRepository
 from app.repositories.order_repository import OrderRepository
 from app.repositories.product_repository import ProductRepository
+from app.utils.phone import normalize_br_phone
 
 # Transições de status válidas para o pedido, geridas pelo lojista.
 # Chave = status atual, valor = conjunto de status para os quais é
@@ -77,6 +78,12 @@ class OrderService:
         self.customer_repo = CustomerRepository(tenant.id)
 
     def create_order(self, payload: dict) -> Order:
+        # Normalizado uma única vez aqui — CheckoutSchema já garantiu que é
+        # um telefone brasileiro válido, então normalize_br_phone nunca
+        # retorna None nesse ponto. _resolve_customer e _persist_order
+        # abaixo leem do mesmo payload, já normalizado.
+        payload["customer_phone"] = normalize_br_phone(payload["customer_phone"])
+
         delivery_type = payload["delivery_type"]
 
         self._validate_delivery_rules(delivery_type)

@@ -7,19 +7,15 @@ resolvido no OrderService. Isso torna impossível manipular o valor do
 pedido alterando dados no navegador.
 """
 
-import re
-
 from marshmallow import EXCLUDE, Schema, ValidationError, fields, validate, validates_schema
 
 from app.models import DeliveryType, PaymentMethod
-
-_PHONE_DIGITS_RE = re.compile(r"\D")
+from app.utils.phone import normalize_br_phone
 
 
 def _validate_phone(value: str) -> None:
-    digits = _PHONE_DIGITS_RE.sub("", value or "")
-    if not (10 <= len(digits) <= 15):
-        raise ValidationError("Telefone inválido. Informe um número com DDD, entre 10 e 15 dígitos.")
+    if normalize_br_phone(value) is None:
+        raise ValidationError("Número inválido. Informe o telefone com DDD, como (67) 99999-9999.")
 
 
 def _validate_not_blank(value: str) -> None:
