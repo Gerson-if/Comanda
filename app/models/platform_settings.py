@@ -34,10 +34,10 @@ LANDING_THEME_CHOICES = [
 ]
 
 DEFAULT_LANDING_CONTENT = {
-    "hero_title": "O Painel Administrativo que seu Delivery merece.",
+    "hero_title": "O Cardápio Digital que seu Delivery merece.",
     "hero_subtitle": (
-        "Crie seu cardápio web em minutos, receba comandas organizadas via WhatsApp, "
-        "acompanhe métricas de faturamento em tempo real e reduza erros de entrega."
+        "Monte seu cardápio digital em minutos, deixe seus clientes pedirem direto "
+        "pelo link e receba tudo organizado no WhatsApp — sem comissão por pedido."
     ),
     "hero_image": None,
     "hero_video": None,

@@ -149,3 +149,35 @@ document.body.addEventListener('htmx:afterSwap', (evt) => initDropzonePreviews(e
     });
   });
 })();
+
+/*
+ * "Revelar ao rolar" — utilitário genérico, sitewide: qualquer elemento
+ * com o atributo `data-reveal` entra com um fade + leve deslocamento
+ * quando cruza a viewport pela primeira vez (um `--reveal-delay` no
+ * style do próprio elemento dá um efeito de cascata em listas/grids).
+ *
+ * A classe que deixa o elemento invisível (`reveal-pending`) só é
+ * adicionada aqui, pelo JS — nunca existe uma regra CSS baseada direto
+ * em `[data-reveal]`. Assim, se este script falhar por qualquer motivo,
+ * o conteúdo continua com a visibilidade normal (progressive
+ * enhancement: nada de seção sumida por causa de um erro de JS).
+ * Respeita `prefers-reduced-motion` pelo mesmo motivo.
+ */
+(function () {
+  const els = document.querySelectorAll('[data-reveal]');
+  if (!els.length) return;
+  if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  els.forEach((el) => el.classList.add('reveal-pending'));
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+
+  els.forEach((el) => observer.observe(el));
+})();

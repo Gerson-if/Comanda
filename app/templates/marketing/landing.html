@@ -25,30 +25,79 @@
   .final-cta::before {
     content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 60%);
   }
+  .landing-nav-toggle { background: transparent; border: 0; padding: 8px; display: inline-flex; align-items: center; justify-content: center; color: var(--card-text, #fff); cursor: pointer; }
+  .landing-nav-toggle .hamburger-icon span { background: currentColor; }
+  .landing-drawer { --bs-offcanvas-width: min(320px, 86vw); background: var(--charcoal); color: var(--paper); }
+  #landingDrawer .offcanvas-header { border-bottom: 1px solid var(--card-border); padding: 16px 18px; }
+  #landingDrawer .offcanvas-body { padding: 18px; }
+  #landingDrawer .btn-close { filter: invert(1) brightness(2); }
+  .landing-drawer-link { display: block; padding: 10px 4px; color: var(--card-text); text-decoration: none; font-weight: 500; border-radius: 8px; transition: background .15s ease; }
+  .landing-drawer-link:hover { background: color-mix(in srgb, var(--card-text) 8%, transparent); color: var(--card-text); }
+  .showcase-panel { transition: transform .25s ease, box-shadow .25s ease; }
+  .showcase-panel:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.2); }
+  .hero-cta-group { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; }
+  .hero-cta-group > * { animation: heroCtaIn .5s ease both; }
+  .hero-cta-group > *:nth-child(2) { animation-delay: .12s; }
+  @keyframes heroCtaIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .hero-link-secondary {
+    color: var(--card-text); text-decoration: none; font-size: .95rem; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px;
+    background: color-mix(in srgb, var(--card-text) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--card-text) 18%, transparent);
+    backdrop-filter: blur(6px); transition: background .2s ease, border-color .2s ease, transform .2s ease;
+  }
+  .hero-link-secondary:hover {
+    color: var(--card-text); transform: translateY(-2px);
+    background: color-mix(in srgb, var(--card-text) 18%, transparent);
+    border-color: color-mix(in srgb, var(--card-text) 32%, transparent);
+  }
+  .btn-cta-glow { animation: ctaGlow 2.6s ease-in-out infinite, heroCtaIn .5s ease both; transition: transform .2s ease, box-shadow .2s ease; }
+  .btn-cta-glow:hover { transform: translateY(-2px); box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 55%, transparent); animation-play-state: paused; }
+  @keyframes ctaGlow {
+    0%, 100% { box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent); }
+    50% { box-shadow: 0 4px 22px color-mix(in srgb, var(--accent) 65%, transparent); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-cta-glow { animation: none; }
+    .hero-cta-group > * { animation: none; }
+  }
   @media (max-width: 767.98px) {
     .hero-section { padding: 110px 0 56px 0; text-align: center; }
     .hero-section .display-4 { font-size: 2.1rem; }
     .hero-section .d-flex.gap-3 { align-items: stretch; }
-  }
-  @media (max-width: 575.98px) {
-    .navbar-custom .btn-outline-custom, .navbar-custom .btn-chili { padding: 8px 14px !important; font-size: .8rem !important; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <nav class="navbar navbar-expand-lg fixed-top navbar-dark navbar-custom py-3">
-  <div class="container">
-    <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+  <div class="container justify-content-between">
+    <a class="navbar-brand d-flex align-items-center gap-2 m-0" href="{{ url_for('index') }}">
       <div class="brand-mark" style="width:36px;height:36px;font-size:1.1rem;"><i class="bi bi-egg-fried text-white"></i></div>
       <span class="font-display" style="font-size:1.2rem; line-height:1;">COMANDA</span>
     </a>
-    <div class="d-flex gap-2">
-      <a href="{{ url_for('auth.login') }}" class="btn-outline-custom py-2 px-3 small" style="font-size:.875rem;">Entrar no Painel</a>
-      <a href="{{ url_for('auth.register') }}" class="btn btn-chili py-2 px-3 small" style="font-size:.875rem;">Criar Minha Loja</a>
-    </div>
+    <button type="button" class="landing-nav-toggle" data-bs-toggle="offcanvas" data-bs-target="#landingDrawer" aria-controls="landingDrawer" aria-label="Abrir menu">
+      <span class="hamburger-icon"><span></span><span></span><span></span></span>
+    </button>
   </div>
 </nav>
+
+<div class="offcanvas offcanvas-end landing-drawer" tabindex="-1" id="landingDrawer">
+  <div class="offcanvas-header">
+    <a class="navbar-brand d-flex align-items-center gap-2 m-0" href="{{ url_for('index') }}">
+      <div class="brand-mark" style="width:32px;height:32px;font-size:1rem;"><i class="bi bi-egg-fried text-white"></i></div>
+      <span class="font-display" style="font-size:1.05rem; line-height:1;">COMANDA</span>
+    </a>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+  </div>
+  <div class="offcanvas-body d-flex flex-column">
+    <a href="#recursos" class="landing-drawer-link" onclick="bootstrap.Offcanvas.getInstance(document.getElementById('landingDrawer'))?.hide()">Recursos</a>
+    <a href="#planos" class="landing-drawer-link" onclick="bootstrap.Offcanvas.getInstance(document.getElementById('landingDrawer'))?.hide()">Planos</a>
+    <hr class="border-secondary-subtle my-3">
+    <a href="{{ url_for('auth.login') }}" class="btn-outline-custom text-center d-flex align-items-center justify-content-center gap-2 mb-2"><i class="bi bi-box-arrow-in-right"></i> Entrar no Painel</a>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-chili d-flex align-items-center justify-content-center gap-2"><i class="bi bi-rocket-takeoff"></i> Criar Minha Loja</a>
+  </div>
+</div>
 
 <section class="hero-section">
   {% if landing.hero_video %}
@@ -56,21 +105,60 @@
   <div class="hero-video-overlay"></div>
   {% endif %}
   <div class="container">
-    <div class="row align-items-center pt-4">
-      <div class="col-lg-6 mb-5 mb-lg-0 text-center text-lg-start">
+    <div class="row align-items-center pt-4 {{ '' if landing.hero_image else 'justify-content-center' }}">
+      <div class="{{ 'col-lg-6 mb-5 mb-lg-0 text-center text-lg-start' if landing.hero_image else 'col-lg-8 text-center' }}">
         <h1 class="font-display display-4 mb-4" style="line-height:1.15;">{{ landing.hero_title }}</h1>
         <p class="lead text-muted-custom mb-4" style="font-size:1.1rem; line-height:1.6;">{{ landing.hero_subtitle }}</p>
-        <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center justify-content-lg-start">
-          <a href="{{ url_for('auth.register') }}" class="btn btn-chili fs-6 px-4">Começar Agora — Grátis</a>
-          <a href="#planos" class="btn-outline-custom text-center fs-6 px-4">Ver Planos de Assinatura</a>
+        <div class="hero-cta-group {{ 'justify-content-lg-start' if landing.hero_image else '' }}">
+          <a href="{{ url_for('auth.register') }}" class="btn btn-chili btn-cta-glow fs-6 px-4">Começar Agora — Grátis</a>
+          <a href="#planos" class="hero-link-secondary">Ver planos de assinatura <i class="bi bi-arrow-down-short"></i></a>
         </div>
       </div>
+      {% if landing.hero_image %}
       <div class="col-lg-6 text-center">
-        {% if landing.hero_image %}
         <img src="{{ url_for('static', filename=landing.hero_image) }}" alt=""
              class="img-fluid rounded shadow-lg mx-auto d-block" style="max-height: 420px; object-fit: cover;">
-        {% else %}
-        <div class="panel text-start shadow-lg mx-auto" style="max-width:480px; border-color:var(--line);">
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section id="recursos" class="py-5" style="background: var(--ink);">
+  <div class="container py-4">
+    <div class="text-center mb-5" data-reveal>
+      <h2 class="font-display text-white">Criado para simplificar sua operação</h2>
+      <p class="text-muted-custom">Substitua anotações confusas e PDFs estáticos por uma plataforma fluida.</p>
+    </div>
+    <div class="row g-4">
+      {% for feature in landing.features %}
+      <div class="col-md-4">
+        <div class="panel feature-panel h-100" data-reveal style="--reveal-delay: {{ loop.index0 * 90 }}ms;">
+          {% if feature.image %}
+          <div class="feature-icon-box p-0" style="background: transparent; overflow: hidden;">
+            <img src="{{ url_for('static', filename=feature.image) }}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+          </div>
+          {% else %}
+          <div class="feature-icon-box"><i class="bi {{ feature.icon }}"></i></div>
+          {% endif %}
+          <h4 class="font-display h5 mb-2" style="color: var(--card-text);">{{ feature.title }}</h4>
+          <p class="text-muted-custom small m-0">{{ feature.description }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section id="mostra" class="py-5">
+  <div class="container py-4">
+    <div class="text-center mb-5" data-reveal>
+      <h2 class="font-display">Do cardápio ao pedido, tudo em um só lugar</h2>
+      <p class="text-muted-custom">Cardápio sempre atualizado e pedidos organizados, direto do seu bolso.</p>
+    </div>
+    <div class="row g-4 justify-content-center align-items-stretch">
+      <div class="col-md-6 col-lg-5" data-reveal>
+        <div class="panel showcase-panel text-start shadow-lg h-100" style="border-color:var(--line);">
           <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary-subtle pb-2">
             <div class="d-flex align-items-center gap-2">
               <span class="pulse-dot"></span>
@@ -92,53 +180,33 @@
               </div>
             </div>
           </div>
-          <div class="p-3 rounded font-mono" style="background:rgba(0,0,0,.2); font-size:.8rem; border-left:3px solid var(--turmeric);">
-            <span class="fw-bold" style="color: var(--card-text);">#1042 · Marina Souza</span>
-            <div class="text-muted-custom mt-1">1x X-Tudo Artesanal Super Recheado</div>
-          </div>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="py-5" style="background: var(--ink);">
-  <div class="container py-4">
-    <div class="text-center mb-5">
-      <h2 class="font-display text-white">Criado para simplificar sua operação</h2>
-      <p class="text-muted-custom">Substitua anotações confusas e PDFs estáticos por uma plataforma fluida.</p>
-    </div>
-    <div class="row g-4">
-      {% for feature in landing.features %}
-      <div class="col-md-4">
-        <div class="panel feature-panel h-100">
-          {% if feature.image %}
-          <div class="feature-icon-box p-0" style="background: transparent; overflow: hidden;">
-            <img src="{{ url_for('static', filename=feature.image) }}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
-          </div>
-          {% else %}
-          <div class="feature-icon-box"><i class="bi {{ feature.icon }}"></i></div>
-          {% endif %}
-          <h4 class="font-display h5 mb-2" style="color: var(--card-text);">{{ feature.title }}</h4>
-          <p class="text-muted-custom small m-0">{{ feature.description }}</p>
+          <p class="text-muted-custom small m-0">Acompanhe faturamento, pedidos em preparo e status da loja em tempo real, de onde estiver.</p>
         </div>
       </div>
-      {% endfor %}
+      <div class="col-md-6 col-lg-5" data-reveal style="--reveal-delay: 90ms;">
+        <div class="ticket showcase-panel h-100 d-flex flex-column">
+          <div class="ticket-head">
+            <span class="ticket-num">#1042 · Marina Souza</span>
+            <span class="status-pill status-pending">Novo</span>
+          </div>
+          <div class="ticket-items">1x X-Tudo Artesanal Super Recheado<br>1x Refrigerante Lata</div>
+          <p class="text-muted-custom small mt-3 mb-0">Cada pedido chega organizado no seu WhatsApp, pronto para confirmar em um clique.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <section id="planos" class="py-5">
   <div class="container py-5">
-    <div class="text-center mb-5">
+    <div class="text-center mb-5" data-reveal>
       <h2 class="font-display">Planos que cabem no bolso da sua operação</h2>
       <p class="text-muted-custom">Sem comissão por pedido. Você escolhe como quer pagar.</p>
     </div>
     <div class="row g-4 justify-content-center">
       {% for plan in plans %}
       <div class="col-md-5 col-lg-4">
-        <div class="panel plan-card h-100 text-center d-flex flex-column {{ 'featured' if plan.is_featured }}">
+        <div class="panel plan-card h-100 text-center d-flex flex-column {{ 'featured' if plan.is_featured }}" data-reveal style="--reveal-delay: {{ loop.index0 * 90 }}ms;">
           <div class="{{ 'text-accent' if plan.is_featured else 'text-muted-custom' }} small fw-bold text-uppercase">{{ plan.name }}</div>
           <div class="font-display h2 my-3" style="color: var(--card-text);">R$ {{ "%.2f"|format(plan.price_cents / 100) }}<span style="font-size:.9rem; font-family:'Inter'; font-weight:normal; color:var(--muted-text);">/{{ "ano" if plan.billing_cycle.value == "yearly" else "mês" }}</span></div>
           <hr class="border-secondary-subtle">
@@ -161,7 +229,7 @@
 </section>
 
 <section class="final-cta py-5">
-  <div class="container py-4 text-center" style="position: relative; z-index: 1;">
+  <div class="container py-4 text-center" style="position: relative; z-index: 1;" data-reveal>
     <h2 class="font-display text-white mb-3">Pronto para organizar o delivery da sua loja?</h2>
     <p class="text-muted-custom mb-4 mx-auto" style="max-width: 480px;">Comece grátis, sem cartão de crédito — seu cardápio fica pronto em minutos.</p>
     <a href="{{ url_for('auth.register') }}" class="btn btn-chili fs-6 px-4">Criar Minha Loja Agora</a>
@@ -171,4 +239,33 @@
 <footer class="py-4 text-center text-muted-custom small border-top" style="border-color: var(--card-border) !important;">
   © {{ current_year }} Comanda. Todos os direitos reservados.
 </footer>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Faz o botão/gesto "voltar" do navegador fechar a gaveta de navegação
+  // em vez de sair da landing page — mesmo princípio do guard de
+  // histórico já usado no carrinho do cardápio público (ver
+  // pushHistoryGuard em public/store_menu.html): empilha UM estado de
+  // histórico "de proteção" na primeira vez que a gaveta abre, e só o
+  // consome quando o usuário realmente aperta voltar (popstate real).
+  // Nunca chamamos history.back() por conta própria ao fechar a gaveta
+  // "normalmente" (X, clique fora, link) — isso consumiria o passo do
+  // histórico sem o usuário pedir.
+  (function () {
+    const drawerEl = document.getElementById('landingDrawer');
+    if (!drawerEl) return;
+    let historyGuardPushed = false;
+    drawerEl.addEventListener('show.bs.offcanvas', () => {
+      if (!historyGuardPushed) {
+        historyGuardPushed = true;
+        history.pushState({ landingDrawer: true }, '');
+      }
+    });
+    window.addEventListener('popstate', () => {
+      historyGuardPushed = false;
+      bootstrap.Offcanvas.getInstance(drawerEl)?.hide();
+    });
+  })();
+</script>
 {% endblock %}

@@ -3,14 +3,23 @@
 
 {% block content %}
 <div class="auth-shell">
-  <div class="auth-panel">
+  <a href="{{ url_for('index') }}" class="auth-back-link"><i class="bi bi-arrow-left"></i> Voltar ao site</a>
+
+  <div class="auth-panel" style="max-width: {% block auth_panel_width %}440px{% endblock %};">
     <div class="text-center mb-4">
-      <div class="brand-mark mx-auto"><i class="bi bi-egg-fried text-white"></i></div>
+      <a href="{{ url_for('index') }}" class="brand-mark mx-auto d-flex"><i class="bi bi-egg-fried text-white"></i></a>
       <h3 class="font-display m-0 mt-2" style="font-size: 1.35rem;">{% block auth_title %}{% endblock %}</h3>
       <p class="text-muted-custom small mt-1">{% block auth_subtitle %}{% endblock %}</p>
     </div>
 
     {% block auth_content %}{% endblock %}
   </div>
+
+  {% block auth_nav_tabs %}
+  <div class="auth-tabs">
+    <a href="{{ url_for('auth.login') }}" class="auth-tab {{ 'is-active' if request.endpoint == 'auth.login' }}">Entrar</a>
+    <a href="{{ url_for('auth.register') }}" class="auth-tab {{ 'is-active' if request.endpoint == 'auth.register' }}">Criar Loja</a>
+  </div>
+  {% endblock %}
 </div>
 {% endblock %}

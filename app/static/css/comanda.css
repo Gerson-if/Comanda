@@ -226,8 +226,25 @@ body {
 .toast-flash-secondary { background: rgba(255,255,255,.06); border-color: var(--card-border); color: var(--paper); }
 
 /* ---------- Painel de autenticação (login/cadastro/recuperar) ---------- */
-.auth-shell { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 16px; }
-.auth-panel { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 40px 30px; width: 100%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.auth-shell { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 16px; gap: 20px; }
+.auth-panel { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 40px 30px; width: 100%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: authPanelIn .5s ease both; }
+.auth-back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--muted-text); text-decoration: none; font-size: .85rem; }
+.auth-back-link:hover { color: var(--card-text); }
+.auth-tabs { display: flex; gap: 4px; background: color-mix(in srgb, var(--card-text) 6%, transparent); border-radius: 30px; padding: 4px; width: 100%; max-width: 440px; }
+.auth-tab { flex: 1; text-align: center; padding: 8px 12px; border-radius: 26px; font-size: .85rem; font-weight: 600; color: var(--muted-text); text-decoration: none; transition: background .2s ease, color .2s ease; }
+.auth-tab:hover { color: var(--card-text); }
+.auth-tab.is-active { background: var(--accent); color: #fff; }
+@keyframes authPanelIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-panel { animation: none; }
+}
+
+/* ---------- "Revelar ao rolar" genérico (data-reveal, ver comanda.js) ---------- */
+.reveal-pending { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; transition-delay: var(--reveal-delay, 0ms); }
+.reveal-pending.is-visible { opacity: 1; transform: none; }
 
 /* ---------- App shell (sidebar + topbar), usado pelo lojista e super admin ---------- */
 .app-shell { display: flex; min-height: 100vh; }
